@@ -13,6 +13,7 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 
+-- | Make an IO primitive
 ioPrim :: Env ExprH -> Name -> ExprH
 ioPrim env name = case name of
   "getLine#" -> primGetLine

@@ -6,6 +6,7 @@ import Data.Map (Map)
 import Data.Text (Text)
 import Data.Vector (Vector)
 
+-- | An expression in the HOAS
 data ExprH
   = IntH Integer
   | FloatH Double

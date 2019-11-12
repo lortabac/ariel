@@ -8,6 +8,7 @@ import Data.Map (Map)
 import Data.Text (Text)
 import Data.Vector (Vector)
 
+-- | An expression in one of Ariel's phases
 data Expr (ph :: Phase)
   = Int Integer
   | Float Double

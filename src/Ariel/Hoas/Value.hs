@@ -7,6 +7,7 @@ module Ariel.Hoas.Value where
 import Ariel.Hoas.Expr
 import Data.Text (Text)
 
+-- | Is the given HOAS expression a value?
 isVal :: ExprH -> Bool
 isVal IntH {} = True
 isVal FloatH {} = True
@@ -24,6 +25,7 @@ isVal IOH {} = True
 isVal (BindH f g) = isVal f && isVal g
 isVal (PureH e) = isVal e
 
+-- | Get a Haskell value out of a HOAS expression
 class IsValue a where
   getValue :: ExprH -> Maybe a
 

@@ -12,6 +12,7 @@ module Ariel.Common.Types where
 import Data.String (IsString)
 import Data.Void (Void)
 
+-- | Language phase
 data Phase = Full | Desugared | Core
 
 type family Until (until :: Phase) (ph :: Phase) a where
@@ -28,8 +29,11 @@ type family UntilS (until :: Phase) (ph :: Phase) a where
   UntilS 'Full 'Full a = a
   UntilS 'Full _ _ = Void
 
+-- | Variant tag
 newtype Tag = Tag {unTag :: String} deriving (Eq, Ord, Show, IsString)
 
+-- | Tuple index
 newtype TupleIx = TupleIx Int deriving (Eq, Num, Show)
 
+-- | Variable name
 newtype Name = Name {unName :: String} deriving (Eq, Ord, Show, IsString)
