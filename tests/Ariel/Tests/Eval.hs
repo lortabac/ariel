@@ -9,6 +9,7 @@ where
 
 import Ariel
 import Data.Map (Map)
+import Data.Text (Text)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -57,7 +58,13 @@ evalTests =
         getValue e @=? Just (2 :: Integer),
       testCase "case Nothing" $ do
         let e = evalCore env $ Case (Cons "Nothing" (Tuple [])) equations
-        getValue e @=? Just (0 :: Integer)
+        getValue e @=? Just (0 :: Integer),
+      testCase "tuple projection 1" $ do
+        let e = evalCore env $ At (Tuple [String "hello", String "world"]) (TupleIx 1)
+        getValue e @=? Just ("hello" :: Text),
+      testCase "tuple projection 2" $ do
+        let e = evalCore env $ At (Tuple [String "hello", String "world"]) (TupleIx 2)
+        getValue e @=? Just ("world" :: Text)
     ]
 
 equations :: Map Tag (Expr 'Core)
