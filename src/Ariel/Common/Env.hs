@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -14,7 +15,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import GHC.Exts (IsList)
 
-newtype Env a = Env (Map Name a) deriving (IsList)
+newtype Env a = Env (Map Name a) deriving (Functor, Foldable, Traversable, IsList)
 
 emptyEnv :: Env a
 emptyEnv = Env Map.empty
