@@ -38,7 +38,7 @@ eval1 env expr = case expr of
   StringH s -> StringH s
   ConsH tag e -> ConsH tag (eval1 env e)
   TupleH xs -> TupleH (eval1 env <$> xs)
-  AtH (TupleH xs) (TupleIx ix) -> fromMaybe (error "Tuple index out of range") (xs !? ix)
+  AtH (TupleH xs) (TupleIx ix) -> fromMaybe (error "Tuple index out of range") (xs !? (ix - 1))
   AtH _ _ -> error "Cannot access a non-tuple by index"
   LamH f -> LamH f
   AppH (VarH name) x -> AppH (eval1 env (VarH name)) x
