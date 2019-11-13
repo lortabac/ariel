@@ -12,11 +12,11 @@ import Data.Map (Map)
 import Test.Tasty
 import Test.Tasty.HUnit
 
-env :: Env (Expr 'Core)
-env = [("id", id_), ("const", const_)]
+defs :: Env (Expr 'Core)
+defs = [("id", id_), ("const", const_)]
 
-hoasEnv :: Env ExprH
-hoasEnv = envToHoas env ["id", "const"]
+env :: Env ExprH
+env = mapToExprH [] defs
 
 id_ :: Expr 'Core
 id_ = Lam (Var "x") (Var "x")
@@ -29,34 +29,34 @@ evalTests =
   testGroup
     "Evaluation"
     [ testCase "id 1" $ do
-        let e = evalCore hoasEnv $ Var "id" `App` Int 1
+        let e = evalCore env $ Var "id" `App` Int 1
         getValue e @=? Just (1 :: Integer),
       testCase "const 1 2" $ do
-        let e = evalCore hoasEnv $ Var "const" `App` Int 1 `App` Int 2
+        let e = evalCore env $ Var "const" `App` Int 1 `App` Int 2
         getValue e @=? Just (1 :: Integer),
       testCase "id id 1" $ do
-        let e = evalCore hoasEnv $ Var "id" `App` Var "id" `App` Int 1
+        let e = evalCore env $ Var "id" `App` Var "id" `App` Int 1
         getValue e @=? Just (1 :: Integer),
       testCase "id (id 1)" $ do
-        let e = evalCore hoasEnv $ Var "id" `App` (Var "id" `App` Int 1)
+        let e = evalCore env $ Var "id" `App` (Var "id" `App` Int 1)
         getValue e @=? Just (1 :: Integer),
       testCase "id id id 1" $ do
-        let e = evalCore hoasEnv $ Var "id" `App` Var "id" `App` Var "id" `App` Int 1
+        let e = evalCore env $ Var "id" `App` Var "id" `App` Var "id" `App` Int 1
         getValue e @=? Just (1 :: Integer),
       testCase "id (const 1) 2" $ do
-        let e = evalCore hoasEnv $ Var "id" `App` (Var "const" `App` Int 1) `App` Int 2
+        let e = evalCore env $ Var "id" `App` (Var "const" `App` Int 1) `App` Int 2
         getValue e @=? Just (1 :: Integer),
       testCase "let x = 1 in x" $ do
-        let e = evalCore hoasEnv $ Let (Var "x") (Int 1) (Var "x")
+        let e = evalCore env $ Let (Var "x") (Int 1) (Var "x")
         getValue e @=? Just (1 :: Integer),
       testCase "let x = 1 in let x = 2 in x" $ do
-        let e = evalCore hoasEnv $ Let (Var "x") (Int 1) (Let (Var "x") (Int 2) (Var "x"))
+        let e = evalCore env $ Let (Var "x") (Int 1) (Let (Var "x") (Int 2) (Var "x"))
         getValue e @=? Just (2 :: Integer),
       testCase "case Just 2" $ do
-        let e = evalCore hoasEnv $ Case (Cons "Just" (Int 2)) equations
+        let e = evalCore env $ Case (Cons "Just" (Int 2)) equations
         getValue e @=? Just (2 :: Integer),
       testCase "case Nothing" $ do
-        let e = evalCore hoasEnv $ Case (Cons "Nothing" (Tuple [])) equations
+        let e = evalCore env $ Case (Cons "Nothing" (Tuple [])) equations
         getValue e @=? Just (0 :: Integer)
     ]
 

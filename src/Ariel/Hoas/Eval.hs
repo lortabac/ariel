@@ -8,7 +8,6 @@ import Ariel.Hoas.Expr
 import Ariel.Hoas.IO
 import Ariel.Hoas.Value
 import Ariel.Language.Expr
-import Data.List (foldl')
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
@@ -62,12 +61,8 @@ evalCase env expr eqs = case eval env expr of
   where
     eq t = fromMaybe (error "Constructor index out of range") (Map.lookup t eqs)
 
-envToHoas :: Env (Expr 'Core) -> [Name] -> Env ExprH
-envToHoas env = foldl' go emptyEnv
-  where
-    go hoasEnv name = case lookupEnv name env of
-      Just x -> insertEnv name (toExprH hoasEnv x) hoasEnv
-      Nothing -> error ("Unknown definition: " ++ unName name)
+mapToExprH :: Env ExprH -> Env (Expr 'Core) -> Env ExprH
+mapToExprH env = fmap (toExprH env)
 
 toExprH :: Env ExprH -> Expr 'Core -> ExprH
 toExprH env expr = case expr of
