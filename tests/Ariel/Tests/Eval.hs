@@ -8,8 +8,8 @@ module Ariel.Tests.Eval
 where
 
 import Ariel
-import Data.Map (Map)
 import Data.Text (Text)
+import Data.Vector (Vector)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -53,11 +53,11 @@ evalTests =
       testCase "let x = 1 in let x = 2 in x" $ do
         let e = evalCore env $ Let (Var "x") (Int 1) (Let (Var "x") (Int 2) (Var "x"))
         getValue e @=? Just (2 :: Integer),
-      testCase "case Just 2" $ do
-        let e = evalCore env $ Case (Cons "Just" (Int 2)) equations
+      testCase "case #1 2" $ do
+        let e = evalCore env $ Case (Cons 1 (Int 2)) equations
         getValue e @=? Just (2 :: Integer),
-      testCase "case Nothing" $ do
-        let e = evalCore env $ Case (Cons "Nothing" (Tuple [])) equations
+      testCase "case #0" $ do
+        let e = evalCore env $ Case (Cons 0 (Tuple [])) equations
         getValue e @=? Just (0 :: Integer),
       testCase "tuple projection 1" $ do
         let e = evalCore env $ At (Tuple [String "hello", String "world"]) (TupleIx 1)
@@ -67,8 +67,8 @@ evalTests =
         getValue e @=? Just ("world" :: Text)
     ]
 
-equations :: Map Tag (Expr 'Core)
+equations :: Vector (Expr 'Core)
 equations =
-  [ ("Nothing", Lam (Var "x") (Int 0)),
-    ("Just", Lam (Var "x") (Var "x"))
+  [ Lam (Var "x") (Int 0),
+    Lam (Var "x") (Var "x")
   ]

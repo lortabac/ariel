@@ -66,10 +66,10 @@ test-suite ariel-tests
                      , Ariel.Tests.IO
                      , Ariel.Tests.Value
   build-depends:       base >=4.12 && <5
-                     , containers
                      , ariel
                      , tasty
                      , tasty-hunit
                      , text
+                     , vector
   default-language:    Haskell2010
   ghc-options:         -Wall

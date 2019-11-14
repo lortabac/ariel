@@ -29,6 +29,9 @@ type family UntilS (until :: Phase) (ph :: Phase) a where
   UntilS 'Full 'Full a = a
   UntilS 'Full _ _ = Void
 
+-- | Variant index
+newtype ConsIx = ConsIx Int deriving (Eq, Num, Show)
+
 -- | Variant tag
 newtype Tag = Tag {unTag :: String} deriving (Eq, Ord, Show, IsString)
 

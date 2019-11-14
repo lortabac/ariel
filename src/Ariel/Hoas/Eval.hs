@@ -8,10 +8,8 @@ import Ariel.Hoas.Expr
 import Ariel.Hoas.IO
 import Ariel.Hoas.Value
 import Ariel.Language.Expr
-import Data.Map (Map)
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
-import Data.Vector ((!?))
+import Data.Vector ((!?), Vector)
 
 run :: Env ExprH -> ExprH -> IO ExprH
 run env expr = case expr of
@@ -35,7 +33,7 @@ eval1 env expr = case expr of
   IntH i -> IntH i
   FloatH f -> FloatH f
   StringH s -> StringH s
-  ConsH tag e -> ConsH tag (eval1 env e)
+  ConsH ix e -> ConsH ix (eval1 env e)
   TupleH xs -> TupleH (eval1 env <$> xs)
   AtH (TupleH xs) (TupleIx ix) -> fromMaybe (error "Tuple index out of range") (xs !? (ix - 1))
   AtH _ _ -> error "Cannot access a non-tuple by index"
@@ -54,12 +52,12 @@ eval1 env expr = case expr of
   BindH f g -> BindH (eval1 env f) g
   PureH e -> IOH $ pure (eval1 env e)
 
-evalCase :: Env ExprH -> ExprH -> Map Tag ExprH -> ExprH
+evalCase :: Env ExprH -> ExprH -> Vector ExprH -> ExprH
 evalCase env expr eqs = case eval env expr of
-  ConsH tag e -> eq tag `AppH` e
+  ConsH (ConsIx ix) e -> eq ix `AppH` e
   _ -> error "Case on a non-constructor"
   where
-    eq t = fromMaybe (error "Constructor index out of range") (Map.lookup t eqs)
+    eq i = fromMaybe (error "Constructor index out of range") (eqs !? i)
 
 mapToExprH :: Env ExprH -> Env (Expr 'Core) -> Env ExprH
 mapToExprH env = fmap (toExprH env)
