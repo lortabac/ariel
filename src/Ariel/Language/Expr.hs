@@ -1,5 +1,9 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Ariel.Language.Expr where
 
@@ -12,7 +16,8 @@ data Expr (ph :: Phase)
   = Int Integer
   | Float Double
   | String Text
-  | Cons ConsIx (Expr ph)
+  | ConsC (CoreOnlyS ph Cons)
+  | VariantC (UntilS 'Desugared ph (Variant ph))
   | Tuple (Vector (Expr ph))
   | At (Expr ph) TupleIx
   | Lam (Expr ph) (Expr ph)
@@ -24,8 +29,23 @@ data Expr (ph :: Phase)
   | IOPrim Name
   | Bind (Expr ph) (Expr ph)
   | Pure (Expr ph)
-  deriving (Eq, Show)
 
 infixl 9 `App`
 
 infixl 1 `Bind`
+
+deriving instance (Eq (CoreOnlyS ph Cons), Eq (UntilS 'Desugared ph (Variant ph))) => Eq (Expr ph)
+
+deriving instance (Show (CoreOnlyS ph Cons), Show (UntilS 'Desugared ph (Variant ph))) => Show (Expr ph)
+
+data Cons = Cons ConsIx (Expr 'Core) deriving (Eq, Show)
+
+data Variant (ph :: Phase) = Variant Tag (Expr ph)
+
+deriving instance Eq (Variant 'Full)
+
+deriving instance Eq (Variant 'Desugared)
+
+deriving instance Show (Variant 'Full)
+
+deriving instance Show (Variant 'Desugared)

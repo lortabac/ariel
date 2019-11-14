@@ -54,10 +54,10 @@ evalTests =
         let e = evalCore env $ Let (Var "x") (Int 1) (Let (Var "x") (Int 2) (Var "x"))
         getValue e @=? Just (2 :: Integer),
       testCase "case #1 2" $ do
-        let e = evalCore env $ Case (Cons 1 (Int 2)) equations
+        let e = evalCore env $ Case (ConsC (Cons 1 (Int 2))) equations
         getValue e @=? Just (2 :: Integer),
       testCase "case #0" $ do
-        let e = evalCore env $ Case (Cons 0 (Tuple [])) equations
+        let e = evalCore env $ Case (ConsC (Cons 0 (Tuple []))) equations
         getValue e @=? Just (0 :: Integer),
       testCase "tuple projection 1" $ do
         let e = evalCore env $ At (Tuple [String "hello", String "world"]) (TupleIx 1)

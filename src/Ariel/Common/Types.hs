@@ -29,6 +29,14 @@ type family UntilS (until :: Phase) (ph :: Phase) a where
   UntilS 'Full 'Full a = a
   UntilS 'Full _ _ = Void
 
+type family CoreOnly (ph :: Phase) a where
+  CoreOnly 'Core a = a
+  CoreOnly _ _ = ()
+
+type family CoreOnlyS (ph :: Phase) a where
+  CoreOnlyS 'Core a = a
+  CoreOnlyS _ _ = Void
+
 -- | Variant index
 newtype ConsIx = ConsIx Int deriving (Eq, Num, Show)
 

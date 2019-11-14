@@ -10,6 +10,7 @@ import Ariel.Hoas.Value
 import Ariel.Language.Expr
 import Data.Maybe (fromMaybe)
 import Data.Vector ((!?), Vector)
+import Data.Void (absurd)
 
 run :: Env ExprH -> ExprH -> IO ExprH
 run env expr = case expr of
@@ -67,7 +68,8 @@ toExprH env expr = case expr of
   Int i -> IntH i
   Float f -> FloatH f
   String s -> StringH s
-  Cons ix e -> ConsH ix (toExprH env e)
+  ConsC (Cons ix e) -> ConsH ix (toExprH env e)
+  VariantC v -> absurd v
   Tuple xs -> TupleH (toExprH env <$> xs)
   At xs ix -> AtH (toExprH env xs) ix
   Lam param body -> makeLamH env param body
