@@ -68,14 +68,15 @@ toExprH env expr = case expr of
   Int i -> IntH i
   Float f -> FloatH f
   String s -> StringH s
-  ConsC (Cons ix e) -> ConsH ix (toExprH env e)
-  VariantC v -> absurd v
+  CoreConsC (CoreCons ix e) -> ConsH ix (toExprH env e)
+  ConsC x -> absurd x
   Tuple xs -> TupleH (toExprH env <$> xs)
   At xs ix -> AtH (toExprH env xs) ix
   Lam param body -> makeLamH env param body
   App f x -> AppH (toExprH env f) (toExprH env x)
   Var name -> VarH name
-  Case e xs -> CaseH (toExprH env e) (toExprH env <$> xs)
+  CoreCaseC (CoreCase e xs) -> CaseH (toExprH env e) (toExprH env <$> xs)
+  CaseC x -> absurd x
   Let e1 e2 body -> makeLetH env e1 e2 body
   Fix rec e -> makeFixH env rec e
   IOPrim name -> ioPrim env name
