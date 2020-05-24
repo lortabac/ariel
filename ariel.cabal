@@ -17,54 +17,57 @@ build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
 library
-  exposed-modules:     Ariel
-                     , Ariel.Hoas.Eval
-                     , Ariel.Hoas.Expr
-                     , Ariel.Hoas.IO
-                     , Ariel.Hoas.Value
-                     , Ariel.Language.Expr
-                     , Ariel.Language.Ty
-                     , Ariel.Common.Env
-                     , Ariel.Common.Types
+  exposed-modules:     Ariel.Evaluation.Eval
+                     , Ariel.Evaluation.IO
+                     , Ariel.Evaluation.IOPrim
+                     , Ariel.Evaluation.Nameless
+                     , Ariel.Evaluation.Prim
+                     , Ariel.Evaluation.Types
+                     , Ariel.Syntax.AST
+                     , Ariel.Syntax.Canonical
+                     , Ariel.Syntax.Types
+                     , Ariel
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.12 && <5
                      , bytestring
                      , containers
+                     , mtl
                      , text
                      , vector
   hs-source-dirs:      src
   default-language:    Haskell2010
-  ghc-options:         -Wall
+  ghc-options:         -Wall -O2
 
 executable ariel
   main-is:             Main.hs
   other-modules:       Examples
                      , Ariel
-                     , Ariel.Hoas.Eval
-                     , Ariel.Hoas.Expr
-                     , Ariel.Hoas.IO
-                     , Ariel.Hoas.Value
-                     , Ariel.Language.Expr
-                     , Ariel.Language.Ty
-                     , Ariel.Common.Env
-                     , Ariel.Common.Types
+                     , Ariel.Evaluation.Eval
+                     , Ariel.Evaluation.IO
+                     , Ariel.Evaluation.IOPrim
+                     , Ariel.Evaluation.Nameless
+                     , Ariel.Evaluation.Prim
+                     , Ariel.Evaluation.Types
+                     , Ariel.Syntax.AST
+                     , Ariel.Syntax.Canonical
+                     , Ariel.Syntax.Types
   -- other-extensions:
   build-depends:       base >=4.12 && <5
                      , bytestring
                      , containers
+                     , mtl
                      , text
                      , vector
   hs-source-dirs:      src
   default-language:    Haskell2010
+  ghc-options:         -Wall -O2
 
 test-suite ariel-tests
   type:                exitcode-stdio-1.0
   main-is:             Tests.hs
   hs-source-dirs:      tests
   other-modules:       Ariel.Tests.Eval
-                     , Ariel.Tests.IO
-                     , Ariel.Tests.Value
   build-depends:       base >=4.12 && <5
                      , ariel
                      , tasty
