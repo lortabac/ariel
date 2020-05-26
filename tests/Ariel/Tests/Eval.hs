@@ -12,7 +12,7 @@ module Ariel.Tests.Eval
 where
 
 import Ariel
-import qualified Ariel.Common.Types as NL
+import qualified Ariel.Evaluation.Types as NL
 import Test.Tasty
 import Test.Tasty.HUnit
 
