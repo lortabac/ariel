@@ -7,4 +7,4 @@ import Ariel
 
 example_Sum =
   evalNamed $
-    ("sum", "n" ==> CoreCase (Prim "Eq" [Var "n", Int 1]) [Prim "Plus" [Var "sum" @@ Prim "Minus" [Var "n", Int 1], Var "n"], Int 1]) `in_` Var "sum" @@ Int 1000000
+    ("sum", "n" ==> CoreCase (Prim "Eq" [Var "n", Int 0]) [Prim "Plus" [Var "sum" @@ Prim "Minus" [Var "n", Int 1], Var "n"], Int 0]) `in_` Var "sum" @@ Int 1000000

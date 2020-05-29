@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module Ariel.Syntax.AST where
 
 import Ariel.Syntax.Types

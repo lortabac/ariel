@@ -14,12 +14,12 @@ removeNames = removeNames' [] []
 
 removeNames' :: [Name] -> [Name] -> AST.Expr -> Expr
 removeNames' ctx _ (AST.Var x) = case elemIndex x ctx of
-  Just i -> Var (VarIx i)
+  Just i -> Var x (VarIx i)
   Nothing -> error ("Free variable " <> unName x)
 removeNames' _ recCtx (AST.RecVar x) = case elemIndex x recCtx of
-  Just i -> RecVar (VarIx i)
+  Just i -> RecVar x (VarIx i)
   Nothing -> error ("Free recursive variable " <> unName x)
-removeNames' ctx recCtx (AST.Lam x e) = Abs (removeNames' (x : ctx) recCtx e)
+removeNames' ctx recCtx (AST.Lam x e) = Abs x (removeNames' (x : ctx) recCtx e)
 removeNames' ctx recCtx (AST.App e1 e2) = App (removeNames' ctx recCtx e1) (removeNames' ctx recCtx e2)
 removeNames' _ _ (AST.Int x) = Int x
 removeNames' _ _ (AST.Double x) = Double x
@@ -31,8 +31,8 @@ removeNames' ctx recCtx (AST.GetT i es) = Get i (removeNames' ctx recCtx es)
 removeNames' ctx recCtx (AST.UpdateT i modify es) = Update i (removeNames' ctx recCtx modify) (removeNames' ctx recCtx es)
 removeNames' ctx recCtx (AST.CoreCase e es) = Case (removeNames' ctx recCtx e) (fmap (removeNames' ctx recCtx) es)
 removeNames' _ _ (AST.Case e es) = error ("Invalid core: " <> show (AST.Case e es))
-removeNames' ctx recCtx (AST.Let x s e) = Let (removeNames' ctx recCtx s) (removeNames' (x : ctx) recCtx e)
-removeNames' ctx recCtx (AST.LetRec x s e) = LetRec (removeNames' ctx (x : recCtx) s) (removeNames' (x : ctx) recCtx e)
+removeNames' ctx recCtx (AST.Let x s e) = Let x (removeNames' ctx recCtx s) (removeNames' (x : ctx) recCtx e)
+removeNames' ctx recCtx (AST.LetRec x s e) = LetRec x (removeNames' ctx (x : recCtx) s) (removeNames' (x : ctx) recCtx e)
 removeNames' ctx recCtx (AST.Prim x es) = Prim (readPrim x) (fmap (removeNames' ctx recCtx) es)
 removeNames' ctx recCtx (AST.IOPrim x es) = IOPrim (readIOPrim x) (fmap (removeNames' ctx recCtx) es)
 removeNames' ctx recCtx (AST.Bind e1 e2) = Bind (removeNames' ctx recCtx e1) (removeNames' ctx recCtx e2)

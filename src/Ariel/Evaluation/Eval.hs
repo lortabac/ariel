@@ -29,32 +29,38 @@ eval env e@(Update (TupleIx i) modify t)
     t' <- eval env t
     modify' <- eval env modify
     case (t', modify') of
-      (Tuple es, Abs f) ->
+      (Tuple es, clos@Clos {}) ->
         let modifyV v = do
               el <- MV.read v (i - 1)
-              el' <- unsafeIOToST $ eval env (App (Abs f) el)
+              el' <- unsafeIOToST $ eval env (App clos el)
               MV.write v (i - 1) el'
          in pure $ Tuple (V.modify modifyV es)
       _ -> error ("Invalid Update: " <> show e)
   | otherwise = error ("Invalid Update: " <> show e)
-eval _ (Abs e) = pure $ Abs e
-eval env e@App {} = snd <$> evalApp env e
-eval env (Let e1 e2) = do
+eval env (Abs x e) = pure $ Clos x e env
+eval _ (Clos x e env) = pure $ Clos x e env
+eval env (App e1 e2) = do
   e1' <- eval env e1
-  env' <- extendEnv e1' env
+  case e1' of
+    Clos _ t lamEnv -> do
+      e2' <- eval env e2
+      let env' = extendEnv e2' lamEnv
+      eval env' t
+    e1'' -> error ("Invalid App: " <> show (App e1'' e2))
+eval env (Let _ e1 e2) = do
+  e1' <- eval env e1
+  let env' = extendEnv e1' env
   eval env' e2
-eval env (LetRec e1 e2) = do
-  env' <- extendRecEnv (Rec env e1) env
+eval env (LetRec _ e1 e2) = do
+  let env' = extendRecEnv (InEnv env e1) env
   e1' <- eval env' e1
-  env'' <- extendEnv e1' env
+  let env'' = extendEnv e1' env
   eval env'' e2
-eval env (Var i) = eval env =<< lookupEnv i env
-eval env (RecVar i) = do
-  e <- lookupRecEnv i env
-  case e of
-    Rec env' e' -> eval env' e'
-    t -> error ("Invalid RecVar: " <> show t)
-eval _ (Rec env e) = eval env e
+eval env (Var _ i) = eval env (lookupEnv i env)
+eval env (RecVar _ i) = case lookupRecEnv i env of
+  InEnv env' e -> eval (extendRecEnv (InEnv env' e) env') e
+  e' -> error ("Invalid RecVar: " <> show e')
+eval _ (InEnv env e) = eval env e
 eval env (Prim p args) = evalPrim p <$> traverse (eval env) args
 eval env (IOPrim p args) = IOPrim p <$> traverse (eval env) args
 eval env (Pure e) = Pure <$> eval env e
@@ -67,24 +73,6 @@ eval env e@(Case p es) = do
       eval env (foldl App lam args)
     _ -> error ("Invalid Case: " <> show e)
 
--- | Evaluate an application
---   Applications are treated specially because they modify the environment
-evalApp :: Env -> Expr -> IO (Env, Expr)
-evalApp env (App e1 e2) = do
-  e1' <- evalApp env e1
-  case e1' of
-    (env', Abs t) -> do
-      e2' <- eval env' e2
-      env'' <- extendEnv e2' env'
-      t' <- eval env'' t
-      pure (env'', t')
-    (_, e) -> error ("Invalid applicand: " <> show e)
-evalApp env e = do
-  e' <- eval env e
-  pure (env, e')
-
 -- | Convenience function to help testing evaluation directly on Ariel expressions
 evalNamed :: AST.Expr -> IO Expr
-evalNamed e = do
-  env <- emptyEnv
-  eval env (removeNames (makeLetRecs e))
+evalNamed e = eval emptyEnv (removeNames (makeLetRecs e))
