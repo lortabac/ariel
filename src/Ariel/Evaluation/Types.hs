@@ -26,7 +26,7 @@ import GHC.Generics (Generic)
 
 -- | Nameless core expression
 data Expr
-  = Int Integer
+  = Int {-# UNPACK #-} Int
   | Double Double
   | Text Text
   | Cons ConsIx [Expr]
@@ -53,6 +53,7 @@ data Prim
   = Eq
   | Plus
   | Minus
+  | ShowInt
   | ConcatText
   deriving (Eq, Read, Show)
 

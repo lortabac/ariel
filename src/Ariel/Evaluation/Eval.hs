@@ -4,7 +4,7 @@ import Ariel.Evaluation.Nameless
 import Ariel.Evaluation.Prim
 import Ariel.Evaluation.Types
 import qualified Ariel.Syntax.AST as AST
-import Ariel.Syntax.Canonical
+import Ariel.Syntax.Transform
 import Ariel.Syntax.Types
 import Control.Monad.ST.Unsafe
 import qualified Data.Vector as V

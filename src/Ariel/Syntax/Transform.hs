@@ -1,9 +1,8 @@
-module Ariel.Syntax.Canonical (makeLetRecs) where
+module Ariel.Syntax.Transform (makeLetRecs) where
 
 import Ariel.Syntax.AST
 import Ariel.Syntax.Types
 import Control.Monad.Writer.Strict
-import Data.Monoid (Any)
 
 makeLetRecs :: Expr -> Expr
 makeLetRecs (Let x s e) = case runWriter (makeRecVars x s) of

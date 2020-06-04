@@ -9,7 +9,7 @@ import Data.Vector (Vector)
 
 -- | Ariel expression
 data Expr
-  = Int Integer
+  = Int Int
   | Double Double
   | Text Text
   | CoreCons ConsIx [Expr]

@@ -24,7 +24,7 @@ library
                      , Ariel.Evaluation.Prim
                      , Ariel.Evaluation.Types
                      , Ariel.Syntax.AST
-                     , Ariel.Syntax.Canonical
+                     , Ariel.Syntax.Transform
                      , Ariel.Syntax.Types
                      , Ariel
   -- other-modules:
