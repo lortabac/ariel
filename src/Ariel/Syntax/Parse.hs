@@ -1,0 +1,199 @@
+{-# LANGUAGE OverloadedStrings #-}
+module Ariel.Syntax.Parse
+( runParseExpr
+, runParseDecl
+, runParseReplStmt
+)
+where
+    
+import qualified Text.Megaparsec as P
+import qualified Text.Megaparsec.Char as P
+import qualified Text.Megaparsec.Char.Lexer as L
+import Data.Text (Text)
+import qualified Data.Text as T (pack)
+import Data.Void
+import Data.Functor (void)
+import Control.Applicative
+
+import Ariel.Syntax.AST
+import Ariel.Syntax.Types
+
+-- TODO: Add an operator table to the parser, to handle precedence and associativity decls
+type Parser = P.Parsec Void Text
+
+-- Lexical structure of Ariel
+singleLineComment :: Parser ()
+singleLineComment = L.skipLineComment "//"
+
+multiLineComment :: Parser ()
+multiLineComment = L.skipBlockCommentNested "/*" "*/"
+
+ignoreSpaceAndComents :: Parser ()
+ignoreSpaceAndComents = L.space P.space1 singleLineComment multiLineComment
+
+-- Parse a lexeme and ignore spaces and comments
+lexeme :: Parser a -> Parser a
+lexeme = L.lexeme ignoreSpaceAndComents
+
+-- Parse a symbol and ignore spaces and comments
+symbol :: Text -> Parser ()
+symbol = void . L.symbol ignoreSpaceAndComents
+
+integer :: Parser Integer
+integer = lexeme L.decimal
+
+float :: Parser Double
+float = lexeme L.float
+
+text :: Parser Text
+text = lexeme $ do
+    _ <- P.char '"'
+    str <- P.manyTill L.charLiteral (P.char '"')
+    return $ T.pack str
+
+identifier :: Parser Name
+identifier = lexeme $ do
+    name <- P.some (P.letterChar)
+    return $ Name name
+
+
+-- Parser definition
+
+-- Helper functions
+betweenParens :: Parser a -> Parser a
+betweenParens = P.between (symbol "(") (symbol ")")
+
+-- Declarations
+
+-- EBNF:
+-- ArgList ::= '(' (identifier ',')* ')'
+-- Decl    ::= identifier '=' Expr
+--           | identifier ArgList '=' Expr
+
+parseDecl :: Parser Decl
+parseDecl = do
+    name <- identifier
+    TermBinding <$> parseTermBinding name
+
+parseNameDecl :: Name -> Parser TermDecl
+parseNameDecl name = do
+    symbol "="
+    body <- parseExpr
+    return $ TermDecl name body
+
+parseArgList :: Parser [Name]
+parseArgList =
+    betweenParens $ P.sepBy identifier (symbol ",")
+
+parseFunDecl :: Name -> Parser TermDecl
+parseFunDecl name = do
+    args <- parseArgList
+    symbol "="
+    expr <- parseExpr
+    return $ TermDecl name (variadicLambda args expr)
+
+parseTermBinding :: Name -> Parser TermDecl
+parseTermBinding name = do
+    termBinding <- parseNameDecl name <|> parseFunDecl name
+    return termBinding
+
+-- Expressions
+
+-- EBNF:
+-- PrimaryExpr ::= LetExpr
+--               | LambdaExpr
+--               | identifier
+--               | Literal
+--               | '(' Expr ')'
+--
+-- ExprList ::= '(' (Expr ',')* ')'
+--
+-- Term ::= PrimaryExpr (ExprList)*
+--
+-- Expr ::= Expr identifier Expr
+--        | Term
+
+-- TODO: Implement infix operators
+parseExpr :: Parser Expr
+parseExpr = parseTerm
+
+parseExprArgList :: Parser [Expr]
+parseExprArgList =
+    betweenParens $ P.sepBy parseExpr (symbol ",")
+
+parseTerm :: Parser Expr
+parseTerm = do
+    primary <- parsePrimary
+    argLists <- many parseExprArgList
+    -- Function application is left associative
+    pure $ variadicApply primary (concat argLists)
+
+parsePrimary :: Parser Expr
+parsePrimary = P.choice [ parseLet
+                        , parsePrimaryStartingWithIdent
+                        , parsePrimaryStartingWithParen
+                        , parseLiteral
+                        ]
+
+parseLet :: Parser Expr
+parseLet = do
+    symbol "let"
+    (TermDecl name binding) <- identifier >>= parseTermBinding
+    symbol ","
+    expr <- parseExpr
+    return $ Let name binding expr
+
+parsePrimaryStartingWithIdent :: Parser Expr
+parsePrimaryStartingWithIdent = do
+    ident <- identifier
+    P.choice [ parseSingleArgLambda ident
+             , pure (Var ident)
+             ]
+
+parseSingleArgLambda :: Name -> Parser Expr
+parseSingleArgLambda arg = do
+    symbol "=>"
+    expr <- parseExpr
+    return $ Lam arg expr
+
+parseMultiArgLambda :: Parser Expr
+parseMultiArgLambda = do
+    args <- parseArgList
+    symbol "=>"
+    expr <- parseExpr
+    return $ variadicLambda args expr
+
+-- TODO: Try removing this 'try'
+parsePrimaryStartingWithParen :: Parser Expr
+parsePrimaryStartingWithParen =
+        P.try parseMultiArgLambda
+    <|> betweenParens parseExpr
+
+
+
+parseLiteral :: Parser Expr
+parseLiteral = P.choice [ Double <$> P.try float
+                        , Int <$> integer
+                        , Text <$> text
+                        ]
+
+-- Run parser and in case of error pretty print the error message
+runParser :: Parser a -> Text -> Either String a
+runParser p input =
+    case P.parse (ignoreSpaceAndComents >> p) "" input of
+        Left err -> Left (P.errorBundlePretty err)
+        Right res -> Right res
+
+-- Public interface
+runParseExpr :: Text -> Either String Expr
+runParseExpr = runParser parseExpr
+
+runParseDecl :: Text -> Either String Decl
+runParseDecl = runParser parseDecl
+
+runParseReplStmt :: Text -> Either String ReplStmt
+runParseReplStmt = let parser = P.choice [ Decl <$> P.try parseDecl
+                                        , Expr <$> parseExpr
+                                        ]
+                   in runParser parser
+
