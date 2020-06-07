@@ -14,12 +14,54 @@ import qualified Data.Text as T (pack)
 import Data.Void
 import Data.Functor (void)
 import Control.Applicative
+import Control.Monad.State.Strict (State, evalState, get, put)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 
 import Ariel.Syntax.AST
 import Ariel.Syntax.Types
 
--- TODO: Add an operator table to the parser, to handle precedence and associativity decls
-type Parser = P.Parsec Void Text
+data Assoc = InfixL | InfixR | InfixN
+           deriving(Eq)
+
+data OperatorInfo = OperatorInfo
+                  { assoc :: Assoc
+                  , prec  :: Int
+                  }
+
+defaultOperatorInfo :: OperatorInfo
+defaultOperatorInfo = OperatorInfo
+                    { assoc = InfixL
+                    , prec = 9
+                    }
+
+type Operators = Map Name OperatorInfo
+
+type Parser = P.ParsecT Void Text (State Operators)
+
+-- Helper function to insert values in a Map
+-- and also check if the value was already inserted
+insertLookup :: Ord k => k -> v -> Map k v -> (Maybe v, Map k v)
+insertLookup key value m = let replaceStrategy _ _ old = old -- if the key is alread in the map, keep the old value
+                           in M.insertLookupWithKey replaceStrategy key value m
+
+-- Register a new operator.
+-- In case the operator has already been registered, an error is issued
+registerOperator :: Name -> OperatorInfo -> Parser ()
+registerOperator name info = do
+    (oldOp, newMap) <- insertLookup name info <$> get
+    -- Check for duplicates
+    case oldOp of
+        -- TODO: probably it's better to use a custom error
+        Just _  -> fail "Duplicate operator registration"
+        Nothing -> put newMap
+
+lookupOperator :: Name -> Parser OperatorInfo
+lookupOperator name = do
+    op <- M.lookup name <$> get
+    case op of
+        Nothing -> return defaultOperatorInfo
+        Just info -> return info
 
 -- Lexical structure of Ariel
 singleLineComment :: Parser ()
@@ -52,9 +94,11 @@ text = lexeme $ do
     return $ T.pack str
 
 identifier :: Parser Name
-identifier = lexeme $ do
-    name <- P.some (P.letterChar)
-    return $ Name name
+identifier = lexeme $ normalIdentifier <|> quotedIdentifier
+    where normalIdentifier = Name <$> P.some P.letterChar
+          quotedIdentifier = do
+              _ <- P.char '\''
+              Name <$> P.someTill P.printChar (P.char '\'')
 
 
 -- Parser definition
@@ -115,7 +159,49 @@ parseTermBinding name = do
 
 -- TODO: Implement infix operators
 parseExpr :: Parser Expr
-parseExpr = parseTerm
+parseExpr = let noOp = OperatorInfo InfixN (-1)
+            in parseExpr' noOp
+
+-- Precedence Parser
+
+-- Given two operators determine the precedence rules
+data PrecRule = LeftBindsTighter
+              | RightBindsTighter
+              | CannotMix
+
+comparePrec :: OperatorInfo -> OperatorInfo -> PrecRule
+comparePrec left right = case compare (prec left) (prec right) of
+    LT -> LeftBindsTighter
+    GT -> RightBindsTighter
+    EQ -> if (assoc left) /= (assoc right)
+          then CannotMix
+          else case assoc left of
+                   InfixL -> LeftBindsTighter
+                   InfixR -> RightBindsTighter
+                   InfixN -> CannotMix
+
+parseExpr' :: OperatorInfo -> Parser Expr
+parseExpr' currOpInfo = parseTerm >>= parseExprRest currOpInfo
+
+-- TODO: This function looks quite a lot like a fold,
+-- probably there is a clearer way to state it
+parseExprRest :: OperatorInfo -> Expr -> Parser Expr
+parseExprRest currOpInfo lhs = go <|> pure lhs
+    where go :: Parser Expr
+          go = do
+              -- peek the next operator
+              newOp <- P.lookAhead identifier
+              newOpInfo <- lookupOperator newOp
+              case currOpInfo `comparePrec` newOpInfo of
+                 CannotMix -> fail "Cannot mix operators"
+                 LeftBindsTighter -> return lhs
+                 RightBindsTighter -> do
+                     -- consume the operator
+                     _ <- identifier
+                     rhs <- parseExpr' newOpInfo
+                     let newLhs = App (App (Var newOp) lhs) rhs
+                     -- Loop again
+                     parseExprRest currOpInfo newLhs
 
 parseExprArgList :: Parser [Expr]
 parseExprArgList =
@@ -156,18 +242,17 @@ parseSingleArgLambda arg = do
     expr <- parseExpr
     return $ Lam arg expr
 
-parseMultiArgLambda :: Parser Expr
-parseMultiArgLambda = do
-    args <- parseArgList
-    symbol "=>"
-    expr <- parseExpr
-    return $ variadicLambda args expr
-
 -- TODO: Try removing this 'try'
 parsePrimaryStartingWithParen :: Parser Expr
-parsePrimaryStartingWithParen =
-        P.try parseMultiArgLambda
-    <|> betweenParens parseExpr
+parsePrimaryStartingWithParen = parseMultiArgLambda <|> betweenParens parseExpr
+    where parseMultiArgLambda = do
+              -- Wrap the first part in a try, because there can be
+              -- common prefixes between parseMultiArgLambda
+              -- and a parenthesized expression, but once we find a =>
+              -- we are sure that what's coming ahead must be a lambda expression
+              args <- P.try $ parseArgList <* symbol "=>"
+              expr <- parseExpr
+              return $ variadicLambda args expr
 
 
 
@@ -179,10 +264,12 @@ parseLiteral = P.choice [ Double <$> P.try float
 
 -- Run parser and in case of error pretty print the error message
 runParser :: Parser a -> Text -> Either String a
-runParser p input =
-    case P.parse (ignoreSpaceAndComents >> p) "" input of
-        Left err -> Left (P.errorBundlePretty err)
-        Right res -> Right res
+runParser p input = let parser = ignoreSpaceAndComents >> p
+                        opTable = M.empty
+                        result = evalState (P.runParserT parser "" input) opTable
+                    in case result of
+                        Left err -> Left (P.errorBundlePretty err)
+                        Right res -> Right res
 
 -- Public interface
 runParseExpr :: Text -> Either String Expr
