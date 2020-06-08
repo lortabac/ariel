@@ -6,6 +6,7 @@ import Ariel.Syntax.Types
 import Data.Map (Map)
 import Data.Text (Text)
 import Data.Vector (Vector)
+import Data.List (foldl')
 
 -- | Ariel expression
 data Expr
@@ -30,6 +31,27 @@ data Expr
   | Bind Expr Expr
   | Pure Expr
   deriving (Eq, Show)
+
+data TermDecl
+  = TermDecl Name Expr
+
+data Decl
+  = TermBinding TermDecl
+
+data ReplStmt
+  = Expr Expr
+  | Decl Decl
+
+
+-- | Convenience function for creating curried lambdas
+--   Note that a lambda with 0 args is simply an expr
+variadicLambda :: [Name] -> Expr -> Expr
+variadicLambda xs e = foldr Lam e xs
+
+-- | Convenience function for applying a function to
+--   multiple arguments, left associatively
+variadicApply :: Expr -> [Expr] -> Expr
+variadicApply f args = foldl' App f args
 
 -- | Convenience operator for lambdas
 (==>) :: Name -> Expr -> Expr

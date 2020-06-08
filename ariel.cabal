@@ -24,6 +24,7 @@ library
                      , Ariel.Evaluation.Prim
                      , Ariel.Evaluation.Types
                      , Ariel.Syntax.AST
+                     , Ariel.Syntax.Parse
                      , Ariel.Syntax.Transform
                      , Ariel.Syntax.Types
                      , Ariel
@@ -32,6 +33,7 @@ library
   build-depends:       base >=4.12 && <5
                      , bytestring
                      , containers
+                     , megaparsec
                      , mtl
                      , text
                      , vector
@@ -50,7 +52,7 @@ executable ariel
                      , Ariel.Evaluation.Prim
                      , Ariel.Evaluation.Types
                      , Ariel.Syntax.AST
-                     , Ariel.Syntax.Canonical
+                     , Ariel.Syntax.Transform
                      , Ariel.Syntax.Types
   -- other-extensions:
   build-depends:       base >=4.12 && <5
@@ -68,6 +70,7 @@ test-suite ariel-tests
   main-is:             Tests.hs
   hs-source-dirs:      tests
   other-modules:       Ariel.Tests.Eval
+                     , Ariel.Tests.Parse
   build-depends:       base >=4.12 && <5
                      , ariel
                      , tasty
