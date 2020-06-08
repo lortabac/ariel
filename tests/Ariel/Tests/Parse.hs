@@ -47,5 +47,8 @@ parseLambdaTests =
          in e @=? Right (("x" ==> "y" ==> Var "x") @@ Int 1 @@ Int 2),
       testCase "lambda application const curried app" $
         let e = runParseExpr "(((x, y) => x)(1))(2)"
+         in e @=? Right (("x" ==> "y" ==> Var "x") @@ Int 1 @@ Int 2),
+      testCase "lambda application const curried app no parens" $
+        let e = runParseExpr "((x, y) => x)(1)(2)"
          in e @=? Right (("x" ==> "y" ==> Var "x") @@ Int 1 @@ Int 2)
     ]
