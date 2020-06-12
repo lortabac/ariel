@@ -11,10 +11,11 @@ tests :: TestTree
 tests =
   testGroup
     "Tests"
-    [ evalLambdaTests
-    , evalTupleTests
-    , evalLetTests
-    , evalCaseTests
-    , evalRecursionTests
-    , parseLambdaTests
+    [ evalLambdaTests,
+      evalTupleTests,
+      evalLetTests,
+      evalCaseTests,
+      evalRecursionTests,
+      parseIdentifierTests,
+      parseLambdaTests
     ]

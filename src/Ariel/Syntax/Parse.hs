@@ -98,7 +98,7 @@ identifier = lexeme $ normalIdentifier <|> quotedIdentifier
     where normalIdentifier = Name <$> P.some P.letterChar
           quotedIdentifier = do
               _ <- P.char '\''
-              Name <$> P.someTill P.printChar (P.char '\'')
+              Name <$> P.someTill L.charLiteral (P.char '\'')
 
 
 -- Parser definition

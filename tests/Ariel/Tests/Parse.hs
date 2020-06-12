@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Ariel.Tests.Parse
-  ( parseLambdaTests,
+  ( parseIdentifierTests,
+    parseLambdaTests,
   )
 where
 
@@ -10,6 +11,21 @@ import Ariel
 import Ariel.Syntax.Parse
 import Test.Tasty
 import Test.Tasty.HUnit
+
+parseIdentifierTests :: TestTree
+parseIdentifierTests =
+  testGroup
+    "Identifier parsing"
+    [ testCase "literal identifier" $
+        let e = runParseExpr "foo"
+         in e @=? Right (Var "foo"),
+      testCase "quoted identifier" $
+        let e = runParseExpr "'foo'"
+         in e @=? Right (Var "foo"),
+      testCase "quoted identifier escape" $
+        let e = runParseExpr "'foo\\''"
+         in e @=? Right (Var "foo'")
+    ]
 
 parseLambdaTests :: TestTree
 parseLambdaTests =
