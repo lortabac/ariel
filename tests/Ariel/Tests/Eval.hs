@@ -119,12 +119,12 @@ evalRecursionTests =
     [ testCase "sum right" $ do
         e <-
           evalNamed $
-            ("sum", "n" ==> CoreCase (Prim "Eq" [Var "n", Int 0]) [Prim "Plus" [Var "sum" @@ Prim "Minus" [Var "n", Int 1], Var "n"], Int 0]) `in_` Var "sum" @@ Int 10
+            ("sum", "n" ==> CoreCase (Prim "Eq" [Var "n", Int 0]) [Prim "Plus" [Var "sum" @@ Prim "Minus" [Var "n", Int 1], Var "n"], Int 0]) `inrec` Var "sum" @@ Int 10
         e @=? NL.Int 55,
       testCase "sum right" $ do
         e <-
           evalNamed $
-            ("eq", eq) `in_` ("sum", "n" ==> CoreCase (Var "eq" @@ Var "n" @@ Int 0) [Prim "Plus" [Var "sum" @@ Prim "Minus" [Var "n", Int 1], Var "n"], Int 0]) `in_` Var "sum" @@ Int 10
+            ("eq", eq) `in_` ("sum", "n" ==> CoreCase (Var "eq" @@ Var "n" @@ Int 0) [Prim "Plus" [Var "sum" @@ Prim "Minus" [Var "n", Int 1], Var "n"], Int 0]) `inrec` Var "sum" @@ Int 10
         e @=? NL.Int 55
     ]
 
