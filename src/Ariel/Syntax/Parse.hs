@@ -12,6 +12,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 import Data.Text (Text)
 import qualified Data.Text as T (pack)
 import Data.Void
+import Data.Char (isSymbol)
 import Data.Functor (void)
 import Control.Monad (when)
 import Control.Applicative
@@ -96,7 +97,7 @@ text = lexeme $ do
 identifier :: Parser Name
 identifier = lexeme $ normalIdentifier <|> quotedIdentifier <|> symbolIdentifier
     where normalIdentifier = Name <$> P.some P.letterChar
-          symbolIdentifier = Name <$> P.some P.symbolChar
+          symbolIdentifier = Name <$> P.some (P.satisfy (\c -> isSymbol c && c /= '#'))
           quotedIdentifier = do
               _ <- P.char '\''
               Name <$> P.someTill L.charLiteral (P.char '\'')
