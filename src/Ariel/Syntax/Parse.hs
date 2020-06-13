@@ -245,7 +245,7 @@ parseLet :: Parser Expr
 parseLet = do
     keyword "let"
     (TermDecl name binding) <- identifier >>= parseTermBinding
-    keyword "in"
+    symbol ","
     expr <- parseExpr
     return $ Let name binding expr
 
@@ -256,7 +256,7 @@ parseLetRec = do
     -- otherwise parseLet can't parse a regular let statement anymore
     P.try $ keyword "let" *> keyword "rec"
     (TermDecl name binding) <- identifier >>= parseTermBinding
-    keyword "in"
+    symbol ","
     expr <- parseExpr
     return $ LetRec name binding expr
 
