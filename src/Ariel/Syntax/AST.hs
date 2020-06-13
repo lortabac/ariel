@@ -35,8 +35,19 @@ data Expr
 data TermDecl
   = TermDecl Name Expr
 
+
+
+data Assoc = InfixL | InfixR | InfixN
+           deriving(Eq)
+
+data OperatorInfo = OperatorInfo
+                  { assoc :: Assoc
+                  , prec  :: Int
+                  }
+
 data Decl
   = TermBinding TermDecl
+  | OperatorDecl Name OperatorInfo
 
 data ReplStmt
   = Expr Expr
