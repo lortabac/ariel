@@ -13,6 +13,7 @@ import Data.Text (Text)
 import qualified Data.Text as T (pack)
 import Data.Void
 import Data.Functor (void)
+import Control.Monad (when)
 import Control.Applicative
 import Control.Monad.State.Strict (State, evalState, get, put)
 import Data.Map.Strict (Map)
@@ -21,14 +22,6 @@ import qualified Data.Vector as V
 
 import Ariel.Syntax.AST
 import Ariel.Syntax.Types
-
-data Assoc = InfixL | InfixR | InfixN
-           deriving(Eq)
-
-data OperatorInfo = OperatorInfo
-                  { assoc :: Assoc
-                  , prec  :: Int
-                  }
 
 defaultOperatorInfo :: OperatorInfo
 defaultOperatorInfo = OperatorInfo
@@ -101,8 +94,9 @@ text = lexeme $ do
     return $ T.pack str
 
 identifier :: Parser Name
-identifier = lexeme $ normalIdentifier <|> quotedIdentifier
+identifier = lexeme $ normalIdentifier <|> quotedIdentifier <|> symbolIdentifier
     where normalIdentifier = Name <$> P.some P.letterChar
+          symbolIdentifier = Name <$> P.some P.symbolChar
           quotedIdentifier = do
               _ <- P.char '\''
               Name <$> P.someTill L.charLiteral (P.char '\'')
@@ -121,13 +115,19 @@ betweenBraces = P.between (symbol "{") (symbol "}")
 
 -- EBNF:
 -- ArgList ::= '(' (identifier ',')* ')'
--- Decl    ::= identifier '=' Expr
---           | identifier ArgList '=' Expr
+-- TermBinding    ::= identifier '=' Expr
+--                  | identifier ArgList '=' Expr
+--
+-- Fixity ::= 'infixl' | 'infixr' | 'infix'
+-- OperatorDecl ::= 'operator' '(' identifier ',' Fixity ',' integer ')'
+--
+-- Decl ::= TermBinding
+--        | OperatorDecl
 
 parseDecl :: Parser Decl
-parseDecl = do
-    name <- identifier
-    TermBinding <$> parseTermBinding name
+parseDecl = P.choice [ TermBinding <$> parseTermBinding
+                     , uncurry OperatorDecl <$> parseOperatorDecl
+                     ]
 
 parseNameDecl :: Name -> Parser TermDecl
 parseNameDecl name = do
@@ -146,10 +146,37 @@ parseFunDecl name = do
     expr <- parseExpr
     return $ TermDecl name (variadicLambda args expr)
 
-parseTermBinding :: Name -> Parser TermDecl
-parseTermBinding name = do
+parseTermBinding :: Parser TermDecl
+parseTermBinding = do
+    name <- identifier
     termBinding <- parseNameDecl name <|> parseFunDecl name
     return termBinding
+
+-- Once an operator decl has been parsed,
+-- the operator is added to the operators table of the parser
+parseOperatorDecl :: Parser (Name, OperatorInfo)
+parseOperatorDecl = do
+    keyword "operator"
+    symbol "("
+    opName <- identifier
+    symbol ","
+    opAssoc <- parseAssociativity
+    symbol ","
+    opPrec <- integer
+    symbol ")"
+    -- Check that the precedence is correct
+    when (opPrec < 0 || opPrec > 9) $ fail "Invalid precedence value, it must be an integer between 0 and 9"
+    let opInfo = OperatorInfo opAssoc opPrec
+    -- Register operator in the op table
+    registerOperator opName opInfo
+    return (opName, opInfo)
+
+parseAssociativity :: Parser Assoc
+parseAssociativity =
+    P.choice [ InfixL <$ P.string "infixl"
+             , InfixR <$ P.string "infixr"
+             , InfixN <$ P.string "infixn"
+             ]
 
 -- Expressions
 
@@ -174,7 +201,6 @@ parseTermBinding name = do
 -- LetExpr :: 'let' Decl ',' Expr
 -- LetRecExpr :: 'let' 'rec' Decl ',' Expr
 
--- TODO: Implement infix operators
 parseExpr :: Parser Expr
 parseExpr = let noOp = OperatorInfo InfixN (-1)
             in parseExpr' noOp
@@ -244,7 +270,7 @@ parsePrimary = P.choice [ parseLetRec
 parseLet :: Parser Expr
 parseLet = do
     keyword "let"
-    (TermDecl name binding) <- identifier >>= parseTermBinding
+    (TermDecl name binding) <- parseTermBinding
     symbol ","
     expr <- parseExpr
     return $ Let name binding expr
@@ -255,7 +281,7 @@ parseLetRec = do
     -- try to parse let rec, if not don't consume
     -- otherwise parseLet can't parse a regular let statement anymore
     P.try $ keyword "let" *> keyword "rec"
-    (TermDecl name binding) <- identifier >>= parseTermBinding
+    (TermDecl name binding) <- parseTermBinding
     symbol ","
     expr <- parseExpr
     return $ LetRec name binding expr
@@ -318,6 +344,6 @@ runParseDecl = runParser parseDecl
 
 runParseReplStmt :: Text -> Either String ReplStmt
 runParseReplStmt = let parser = P.choice [ Decl <$> P.try parseDecl
-                                        , Expr <$> parseExpr
-                                        ]
+                                         , Expr <$> parseExpr
+                                         ]
                    in runParser parser
