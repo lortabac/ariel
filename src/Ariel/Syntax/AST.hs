@@ -82,6 +82,12 @@ in_ (n, e1) e2 = Let n e1 e2
 
 infixr 2 `in_`
 
+-- | Convenience operator for let rec expressions
+inrec :: (Name, Expr) -> Expr -> Expr
+inrec (n, e1) e2 = LetRec n e1 e2
+
+infixr 2 `inrec`
+
 -- | Convenience operator for bind
 (>>==) :: Expr -> Expr -> Expr
 (>>==) = Bind
