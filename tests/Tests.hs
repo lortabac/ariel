@@ -17,5 +17,6 @@ tests =
       evalCaseTests,
       evalRecursionTests,
       parseIdentifierTests,
-      parseLambdaTests
+      parseLambdaTests,
+      parseLetTests
     ]
