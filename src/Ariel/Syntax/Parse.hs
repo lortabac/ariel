@@ -17,6 +17,7 @@ import Control.Applicative
 import Control.Monad.State.Strict (State, evalState, get, put)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import qualified Data.Vector as V
 
 import Ariel.Syntax.AST
 import Ariel.Syntax.Types
@@ -73,6 +74,9 @@ multiLineComment = L.skipBlockCommentNested "/*" "*/"
 ignoreSpaceAndComents :: Parser ()
 ignoreSpaceAndComents = L.space P.space1 singleLineComment multiLineComment
 
+spaceLike :: Parser ()
+spaceLike = L.space (void $ P.oneOf [' ', '\t']) empty empty
+
 -- Parse a lexeme and ignore spaces and comments
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme ignoreSpaceAndComents
@@ -80,6 +84,9 @@ lexeme = L.lexeme ignoreSpaceAndComents
 -- Parse a symbol and ignore spaces and comments
 symbol :: Text -> Parser ()
 symbol = void . L.symbol ignoreSpaceAndComents
+
+keyword :: Text -> Parser ()
+keyword w = P.string w *> P.notFollowedBy P.alphaNumChar *> spaceLike
 
 integer :: Parser Int
 integer = lexeme L.decimal
@@ -106,6 +113,9 @@ identifier = lexeme $ normalIdentifier <|> quotedIdentifier
 -- Helper functions
 betweenParens :: Parser a -> Parser a
 betweenParens = P.between (symbol "(") (symbol ")")
+
+betweenBraces :: Parser a -> Parser a
+betweenBraces = P.between (symbol "{") (symbol "}")
 
 -- Declarations
 
@@ -145,10 +155,12 @@ parseTermBinding name = do
 
 -- EBNF:
 -- PrimaryExpr ::= LetExpr
+--               | LetRecExpr
 --               | LambdaExpr
 --               | identifier
 --               | Literal
 --               | '(' Expr ')'
+--               | Tuple
 --
 -- ExprList ::= '(' (Expr ',')* ')'
 --
@@ -156,6 +168,11 @@ parseTermBinding name = do
 --
 -- Expr ::= Expr identifier Expr
 --        | Term
+--
+-- Tuple ::= '{' (PrimaryExpr ',')* '}'
+-- 
+-- LetExpr :: 'let' Decl ',' Expr
+-- LetRecExpr :: 'let' 'rec' Decl ',' Expr
 
 -- TODO: Implement infix operators
 parseExpr :: Parser Expr
@@ -215,19 +232,34 @@ parseTerm = do
     pure $ variadicApply primary (concat argLists)
 
 parsePrimary :: Parser Expr
-parsePrimary = P.choice [ parseLet
+parsePrimary = P.choice [ parseLetRec
+                        , parseLet
                         , parsePrimaryStartingWithIdent
                         , parsePrimaryStartingWithParen
                         , parseLiteral
+                        , parseTuple
                         ]
 
+-- non recursive let expression
 parseLet :: Parser Expr
 parseLet = do
-    symbol "let"
+    keyword "let"
     (TermDecl name binding) <- identifier >>= parseTermBinding
     symbol ","
     expr <- parseExpr
     return $ Let name binding expr
+
+-- recursive let expression
+parseLetRec :: Parser Expr
+parseLetRec = do
+    -- try to parse let rec, if not don't consume
+    -- otherwise parseLet can't parse a regular let statement anymore
+    P.try $ keyword "let" *> keyword "rec"
+    (TermDecl name binding) <- identifier >>= parseTermBinding
+    symbol ","
+    expr <- parseExpr
+    return $ LetRec name binding expr
+
 
 parsePrimaryStartingWithIdent :: Parser Expr
 parsePrimaryStartingWithIdent = do
@@ -262,6 +294,12 @@ parseLiteral = P.choice [ Double <$> P.try float
                         , Text <$> text
                         ]
 
+-- Parse tuples of form '{' (PrimaryExpr, )* '}'
+parseTuple :: Parser Expr
+parseTuple = do
+    exprs <- betweenBraces $ P.sepBy parsePrimary (symbol ",")
+    return $ Tuple $ V.fromList exprs
+
 -- Run parser and in case of error pretty print the error message
 runParser :: Parser a -> Text -> Either String a
 runParser p input = let parser = ignoreSpaceAndComents >> p
@@ -283,4 +321,3 @@ runParseReplStmt = let parser = P.choice [ Decl <$> P.try parseDecl
                                         , Expr <$> parseExpr
                                         ]
                    in runParser parser
-
