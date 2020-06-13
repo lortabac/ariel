@@ -171,8 +171,8 @@ parseTermBinding name = do
 --
 -- Tuple ::= '{' (PrimaryExpr ',')* '}'
 -- 
--- LetExpr :: 'let' Decl 'in' Expr
--- LetRecExpr :: 'let' 'rec' Decl 'in' Expr
+-- LetExpr :: 'let' Decl ',' Expr
+-- LetRecExpr :: 'let' 'rec' Decl ',' Expr
 
 -- TODO: Implement infix operators
 parseExpr :: Parser Expr
