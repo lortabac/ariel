@@ -183,6 +183,9 @@ parseAssociativity =
 
 -- EBNF:
 -- PrimaryExpr ::= LetExpr
+--               | CaseExpr
+--               | PrimExpr
+--               | ConExpr
 --               | LetRecExpr
 --               | LambdaExpr
 --               | identifier
@@ -199,8 +202,11 @@ parseAssociativity =
 --
 -- Tuple ::= '{' (PrimaryExpr ',')* '}'
 -- 
--- LetExpr :: 'let' Decl ',' Expr
--- LetRecExpr :: 'let' 'rec' Decl ',' Expr
+-- LetExpr ::= 'let' Decl ',' Expr
+-- LetRecExpr ::= 'let' 'rec' Decl ',' Expr
+-- CaseExpr ::= '#case' ExprList
+-- PrimExpr ::= '#prim' identifier ExprList
+-- ConExpr ::= '#con' integer ExprList
 
 parseExpr :: Parser Expr
 parseExpr = let noOp = OperatorInfo InfixN (-1)
@@ -261,6 +267,9 @@ parseTerm = do
 parsePrimary :: Parser Expr
 parsePrimary = P.choice [ parseLetRec
                         , parseLet
+                        , parsePrimitive
+                        , parseCase
+                        , parseConstructor
                         , parsePrimaryStartingWithIdent
                         , parsePrimaryStartingWithParen
                         , parseLiteral
@@ -287,6 +296,31 @@ parseLetRec = do
     expr <- parseExpr
     return $ LetRec name binding expr
 
+parseCase :: Parser Expr
+parseCase = do
+    keyword "#case"
+    e <- parseExpr
+    cases <- parseExprArgList
+    return $ CoreCase e (V.fromList cases)
+
+parsePrimitive :: Parser Expr
+parsePrimitive = do
+    keyword "#prim"
+    name <- identifier
+    args <- parseExprArgList
+    case args of
+        [a1]      -> return $ Prim1 name a1
+        [a1, a2]  -> return $ Prim2 name a1 a2
+        _         -> fail "Wrong number of arguments for primitive"
+
+parseConstructor :: Parser Expr
+parseConstructor = do
+    keyword "#con"
+    index <- integer
+    when (index < 0) $ fail "The index must be a non negative integer"
+    args <- parseExprArgList
+    let tag = Tag (show index)
+    return $ Cons tag args
 
 parsePrimaryStartingWithIdent :: Parser Expr
 parsePrimaryStartingWithIdent = do
