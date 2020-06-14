@@ -26,7 +26,8 @@ data Expr
   | Case Expr (Map Tag Expr)
   | Let Name Expr Expr
   | LetRec Name Expr Expr
-  | Prim Name [Expr]
+  | Prim1 Name Expr
+  | Prim2 Name Expr Expr
   | IOPrim Name [Expr]
   | Bind Expr Expr
   | Pure Expr

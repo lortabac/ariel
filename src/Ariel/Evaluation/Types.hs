@@ -3,8 +3,10 @@
 
 module Ariel.Evaluation.Types
   ( Expr (..),
-    Prim (..),
-    readPrim,
+    Prim1 (..),
+    Prim2 (..),
+    readPrim1,
+    readPrim2,
     IOPrim (..),
     readIOPrim,
     Env,
@@ -42,23 +44,31 @@ data Expr
   | Case Expr (Vector Expr)
   | Let Name Expr Expr
   | LetRec Name Expr Expr
-  | Prim Prim [Expr]
+  | Prim1 Prim1 Expr
+  | Prim2 Prim2 Expr Expr
   | IOPrim IOPrim [Expr]
   | Bind Expr Expr
   | Pure Expr
   deriving (Eq, Show, Generic)
 
--- | Primitive pure operation
-data Prim
+-- | Primitive pure unary operation
+data Prim1
+  = ShowInt
+  deriving (Eq, Read, Show)
+
+-- | Primitive pure binary operation
+data Prim2
   = Eq
   | Plus
   | Minus
-  | ShowInt
   | ConcatText
   deriving (Eq, Read, Show)
 
-readPrim :: Name -> Prim
-readPrim = read . coerce
+readPrim1 :: Name -> Prim1
+readPrim1 = read . coerce
+
+readPrim2 :: Name -> Prim2
+readPrim2 = read . coerce
 
 -- | Primitive IO operation
 data IOPrim

@@ -61,7 +61,8 @@ eval env (RecVar _ i) = case lookupRecEnv i env of
   InEnv env' e -> eval (extendRecEnv (InEnv env' e) env') e
   e' -> error ("Invalid RecVar: " <> show e')
 eval _ (InEnv env e) = eval env e
-eval env (Prim p args) = evalPrim p <$> traverse (eval env) args
+eval env (Prim1 p e) = evalPrim1 p <$> eval env e
+eval env (Prim2 p e1 e2) = evalPrim2 p <$> eval env e1 <*> eval env e2
 eval env (IOPrim p args) = IOPrim p <$> traverse (eval env) args
 eval env (Pure e) = Pure <$> eval env e
 eval env (Bind e1 e2) = Bind <$> eval env e1 <*> eval env e2

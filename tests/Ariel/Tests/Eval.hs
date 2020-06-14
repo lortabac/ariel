@@ -42,7 +42,7 @@ evalTupleTests =
         e <- evalNamed $ GetT 1 (Tuple [("x" ==> Var "x") @@ Int 1, Int 2])
         e @=? NL.Int 1,
       testCase "update" $ do
-        e <- evalNamed $ UpdateT 1 ("n" ==> Prim "Plus" [Var "n", Int 1]) (Tuple [Int 0, Text "hello"])
+        e <- evalNamed $ UpdateT 1 ("n" ==> Prim2 "Plus" (Var "n") (Int 1)) (Tuple [Int 0, Text "hello"])
         e @=? NL.Tuple [NL.Int 1, NL.Text "hello"]
     ]
 
@@ -102,10 +102,10 @@ evalCaseTests =
         e <- evalNamed $ CoreCase nothing [Int 0, "x" ==> Var "x"]
         e @=? NL.Int 0,
       testCase "multiarg 0" $ do
-        e <- evalNamed $ CoreCase (CoreCons 0 [Int 1, Int 1]) ["x" ==> "y" ==> Prim "Plus" [Var "x", Var "y"]]
+        e <- evalNamed $ CoreCase (CoreCons 0 [Int 1, Int 1]) ["x" ==> "y" ==> Prim2 "Plus" (Var "x") (Var "y")]
         e @=? NL.Int 2,
       testCase "multiarg 1" $ do
-        e <- evalNamed $ CoreCase (CoreCons 1 [Int 1, Int 1]) [Int 0, "x" ==> "y" ==> Prim "Plus" [Var "x", Var "y"]]
+        e <- evalNamed $ CoreCase (CoreCons 1 [Int 1, Int 1]) [Int 0, "x" ==> "y" ==> Prim2 "Plus" (Var "x") (Var "y")]
         e @=? NL.Int 2,
       testCase "var arg" $ do
         e <- evalNamed $ ("one", Int 1) `in_` CoreCase (just (Var "one")) [Int 0, "x" ==> Var "x"]
@@ -119,12 +119,12 @@ evalRecursionTests =
     [ testCase "sum right" $ do
         e <-
           evalNamed $
-            ("sum", "n" ==> CoreCase (Prim "Eq" [Var "n", Int 0]) [Prim "Plus" [Var "sum" @@ Prim "Minus" [Var "n", Int 1], Var "n"], Int 0]) `inrec` Var "sum" @@ Int 10
+            ("sum", "n" ==> CoreCase (Prim2 "Eq" (Var "n") (Int 0)) [Prim2 "Plus" (Var "sum" @@ Prim2 "Minus" (Var "n") (Int 1)) (Var "n"), Int 0]) `inrec` Var "sum" @@ Int 10
         e @=? NL.Int 55,
       testCase "sum right" $ do
         e <-
           evalNamed $
-            ("eq", eq) `in_` ("sum", "n" ==> CoreCase (Var "eq" @@ Var "n" @@ Int 0) [Prim "Plus" [Var "sum" @@ Prim "Minus" [Var "n", Int 1], Var "n"], Int 0]) `inrec` Var "sum" @@ Int 10
+            ("eq", eq) `in_` ("sum", "n" ==> CoreCase (Var "eq" @@ Var "n" @@ Int 0) [Prim2 "Plus" (Var "sum" @@ Prim2 "Minus" (Var "n") (Int 1)) (Var "n"), Int 0]) `inrec` Var "sum" @@ Int 10
         e @=? NL.Int 55
     ]
 
@@ -141,4 +141,4 @@ true :: Expr
 true = CoreCons 1 []
 
 eq :: Expr
-eq = "x" ==> "y" ==> Prim "Eq" [Var "x", Var "y"]
+eq = "x" ==> "y" ==> Prim2 "Eq" (Var "x") (Var "y")
