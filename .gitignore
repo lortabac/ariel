@@ -24,3 +24,4 @@ cabal.project.local~
 hie.yaml
 stack.yaml
 stack.yaml.lock
+.github/
