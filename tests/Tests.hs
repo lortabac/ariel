@@ -18,5 +18,6 @@ tests =
       evalRecursionTests,
       parseIdentifierTests,
       parseLambdaTests,
-      parseLetTests
+      parseLetTests,
+      parseTupleTests
     ]

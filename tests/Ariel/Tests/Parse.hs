@@ -5,6 +5,7 @@ module Ariel.Tests.Parse
   ( parseIdentifierTests,
     parseLambdaTests,
     parseLetTests,
+    parseTupleTests,
   )
 where
 
@@ -90,4 +91,31 @@ parseLetTests =
       testCase "let nested sub" $
         let e = runParseExpr "let x = let y = 2, y, x"
          in e @=? Right (Let "x" (Let "y" (Int 2) (Var "y")) (Var "x"))
+    ]
+
+parseTupleTests :: TestTree
+parseTupleTests =
+  testGroup
+    "tuple parsing"
+    [ testCase "unit" $
+        let e = runParseExpr "{}"
+         in e @=? Right (Tuple []),
+      testCase "1-element tuple" $
+        let e = runParseExpr "{1}"
+         in e @=? Right (Tuple [Int 1]),
+      testCase "pair" $
+        let e = runParseExpr "{1, \"hello\"}"
+         in e @=? Right (Tuple [Int 1, Text "hello"]),
+      testCase "nested tuples" $
+        let e = runParseExpr "{{1}}"
+         in e @=? Right (Tuple [Tuple [Int 1]]),
+      testCase "let in tuple 1" $
+        let e = runParseExpr "{let x = 1, x, 2}"
+         in e @=? Right (Tuple [Let "x" (Int 1) (Var "x"), Int 2]),
+      testCase "let in tuple 2" $
+        let e = runParseExpr "{2, let x = 1, x, 3}"
+         in e @=? Right (Tuple [Int 2, Let "x" (Int 1) (Var "x"), Int 3]),
+      testCase "let in tuple parens" $
+        let e = runParseExpr "{2, (let x = 1, x), 3}"
+         in e @=? Right (Tuple [Int 2, Let "x" (Int 1) (Var "x"), Int 3])
     ]
