@@ -6,6 +6,7 @@ module Ariel.Tests.Parse
     parseLambdaTests,
     parseLetTests,
     parseTupleTests,
+    parseCoreCon,
   )
 where
 
@@ -118,4 +119,13 @@ parseTupleTests =
       testCase "let in tuple parens" $
         let e = runParseExpr "{2, (let x = 1, x), 3}"
          in e @=? Right (Tuple [Int 2, Let "x" (Int 1) (Var "x"), Int 3])
+    ]
+
+parseCoreCon :: TestTree
+parseCoreCon =
+  testGroup
+    "core constructor parsing"
+    [ testCase "no args" $
+        let e = runParseExpr "#con 1()"
+         in e @=? Right (CoreCons 1 [])
     ]

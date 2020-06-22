@@ -19,5 +19,6 @@ tests =
       parseIdentifierTests,
       parseLambdaTests,
       parseLetTests,
-      parseTupleTests
+      parseTupleTests,
+      parseCoreCon
     ]

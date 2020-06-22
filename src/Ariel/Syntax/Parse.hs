@@ -268,8 +268,8 @@ parsePrimary :: Parser Expr
 parsePrimary = P.choice [ parseLetRec
                         , parseLet
                         , parsePrimitive
-                        , parseCase
-                        , parseConstructor
+                        , parseCoreCase
+                        , parseCoreConstructor
                         , parsePrimaryStartingWithIdent
                         , parsePrimaryStartingWithParen
                         , parseLiteral
@@ -296,8 +296,8 @@ parseLetRec = do
     expr <- parseExpr
     return $ LetRec name binding expr
 
-parseCase :: Parser Expr
-parseCase = do
+parseCoreCase :: Parser Expr
+parseCoreCase = do
     keyword "#case"
     e <- parseExpr
     cases <- parseExprArgList
@@ -313,14 +313,13 @@ parsePrimitive = do
         [a1, a2]  -> return $ Prim2 name a1 a2
         _         -> fail "Wrong number of arguments for primitive"
 
-parseConstructor :: Parser Expr
-parseConstructor = do
+parseCoreConstructor :: Parser Expr
+parseCoreConstructor = do
     keyword "#con"
     index <- integer
     when (index < 0) $ fail "The index must be a non negative integer"
     args <- parseExprArgList
-    let tag = Tag (show index)
-    return $ Cons tag args
+    return $ CoreCons (ConsIx index) args
 
 parsePrimaryStartingWithIdent :: Parser Expr
 parsePrimaryStartingWithIdent = do
