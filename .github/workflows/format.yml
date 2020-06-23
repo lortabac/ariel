@@ -1,0 +1,40 @@
+name: Formatting
+
+on:
+  push: {}
+  pull_request: {}
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-haskell@v1
+      with:
+        ghc-version: '8.8.2'
+        cabal-version: '3.0'
+
+    - name: Cache
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-ormolu
+      with:
+        path: /home/runner/.cabal/bin/ormolu
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-ormolu
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install ormolu format and commit
+      run: |
+        mkdir -p /home/runner/.cabal/bin
+        cabal update
+        cabal install --installdir=/home/runner/.cabal/bin --overwrite-policy=always ormolu
+        /home/runner/.cabal/bin/ormolu --mode inplace $(find . -name '*.hs')
+        git config --global user.email "formatting@bot"
+        git config --global user.name "Formatting bot"
+        git commit -am "Automatic formatting."
+        git push
