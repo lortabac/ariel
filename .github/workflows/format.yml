@@ -30,6 +30,7 @@ jobs:
 
     - name: Install ormolu format and commit
       run: |
+        echo $HOME
         mkdir -p /home/runner/.cabal/bin
         cabal update
         cabal install --installdir=/home/runner/.cabal/bin --overwrite-policy=always ormolu
