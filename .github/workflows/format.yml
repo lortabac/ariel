@@ -16,25 +16,12 @@ jobs:
         ghc-version: '8.8.2'
         cabal-version: '3.0'
 
-    - name: Cache
-      uses: actions/cache@v1
-      env:
-        cache-name: cache-ormolu
-      with:
-        path: /home/runner/.cabal/bin/ormolu
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-ormolu
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
-
     - name: Install ormolu format and commit
       run: |
-        echo $HOME
-        mkdir -p /home/runner/.cabal/bin
+        mkdir -p "$HOME/.cabal/bin"
         cabal update
-        cabal install --installdir=/home/runner/.cabal/bin --overwrite-policy=always ormolu
-        /home/runner/.cabal/bin/ormolu --mode inplace $(find . -name '*.hs')
+        cabal install --installdir="$HOME/.cabal/bin" --overwrite-policy=always ormolu
+        $HOME/.cabal/bin/ormolu --mode inplace $(find . -name '*.hs')
         git config --global user.email "formatting@bot"
         git config --global user.name "Formatting bot"
         git commit -am "Automatic formatting."
