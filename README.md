@@ -32,6 +32,14 @@ These features will be added sometime in the future:
 
 - JavaScript backend.
 
-# Status
+## Implementation
+
+The evaluator uses nameless environments, similarly to the LETREC interpreter
+described in Friedman, Wand. 2008. _Essentials of Programming Languages_, MIT Press.
+
+The type-checker is based on [Peyton Jones, Vytiniotis, Weirich, Shields. 2007. _Practical type inference for arbitrary-rank types_](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/putting.pdf),
+adapted to a query-based approach, as described in https://ollef.github.io/blog/posts/query-based-compilers.html.
+
+## Status
 
 The project is still in a very early phase.
