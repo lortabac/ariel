@@ -3,10 +3,10 @@
 module Ariel.Syntax.AST where
 
 import Ariel.Syntax.Types
+import Data.List (foldl')
 import Data.Map (Map)
 import Data.Text (Text)
 import Data.Vector (Vector)
-import Data.List (foldl')
 
 -- | Ariel expression
 data Expr
@@ -36,15 +36,13 @@ data Expr
 data TermDecl
   = TermDecl Name Expr
 
-
-
 data Assoc = InfixL | InfixR | InfixN
-           deriving(Eq)
+  deriving (Eq)
 
 data OperatorInfo = OperatorInfo
-                  { assoc :: Assoc
-                  , prec  :: Int
-                  }
+  { assoc :: Assoc,
+    prec :: Int
+  }
 
 data Decl
   = TermBinding TermDecl
@@ -53,7 +51,6 @@ data Decl
 data ReplStmt
   = Expr Expr
   | Decl Decl
-
 
 -- | Convenience function for creating curried lambdas
 --   Note that a lambda with 0 args is simply an expr

@@ -34,9 +34,9 @@ makeRecVars n1 (Var n2) =
     else Var n2
 makeRecVars _ (RecVar x) = RecVar x
 makeRecVars n1 (Lam n2 e) =
-    if n1 == n2
-        then Lam n2 e
-        else Lam n2 (makeRecVars n1 e)
+  if n1 == n2
+    then Lam n2 e
+    else Lam n2 (makeRecVars n1 e)
 makeRecVars n (App e1 e2) = App (makeRecVars n e1) (makeRecVars n e2)
 makeRecVars _ (Int x) = Int x
 makeRecVars _ (Double x) = Double x
