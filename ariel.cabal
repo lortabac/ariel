@@ -17,16 +17,13 @@ build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
 library
-  exposed-modules:     Ariel.Evaluation.Eval
-                     , Ariel.Evaluation.IO
-                     , Ariel.Evaluation.IOPrim
-                     , Ariel.Evaluation.Nameless
-                     , Ariel.Evaluation.Prim
-                     , Ariel.Evaluation.Types
-                     , Ariel.Syntax.AST
+  exposed-modules:     Ariel.Syntax.AST
                      , Ariel.Syntax.Parse
-                     , Ariel.Syntax.Transform
+                     , Ariel.Syntax.Ty
                      , Ariel.Syntax.Types
+                     , Ariel.TC.Check
+                     , Ariel.TC.Constraints
+                     , Ariel.TC.Context
                      , Ariel
   -- other-modules:
   -- other-extensions:
@@ -34,8 +31,10 @@ library
                      , bytestring
                      , containers
                      , megaparsec
+                     , logict
                      , mtl
                      , text
+                     , unification-fd >=0.12
                      , vector
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -43,23 +42,14 @@ library
 
 executable ariel
   main-is:             Main.hs
-  other-modules:       Examples
-                     , Ariel
-                     , Ariel.Evaluation.Eval
-                     , Ariel.Evaluation.IO
-                     , Ariel.Evaluation.IOPrim
-                     , Ariel.Evaluation.Nameless
-                     , Ariel.Evaluation.Prim
-                     , Ariel.Evaluation.Types
-                     , Ariel.Syntax.AST
-                     , Ariel.Syntax.Transform
-                     , Ariel.Syntax.Types
+  other-modules:       Ariel
   -- other-extensions:
   build-depends:       base >=4.12 && <5
                      , bytestring
                      , containers
                      , mtl
                      , text
+                     , unification-fd >=0.12
                      , vector
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -69,8 +59,7 @@ test-suite ariel-tests
   type:                exitcode-stdio-1.0
   main-is:             Tests.hs
   hs-source-dirs:      tests
-  other-modules:       Ariel.Tests.Eval
-                     , Ariel.Tests.Parse
+  other-modules:       Ariel.Tests.Parse
   build-depends:       base >=4.12 && <5
                      , ariel
                      , tasty

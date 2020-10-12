@@ -1,6 +1,4 @@
 module Main where
 
-import Examples
-
 main :: IO ()
-main = print =<< example_Sum
+main = putStrLn "Hello world"

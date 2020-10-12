@@ -6,28 +6,23 @@ import Ariel.Syntax.Types
 import Data.List (foldl')
 import Data.Map (Map)
 import Data.Text (Text)
-import Data.Vector (Vector)
 
 -- | Ariel expression
 data Expr
   = Int Int
   | Double Double
   | Text Text
-  | CoreCons ConsIx [Expr]
   | Cons Tag [Expr]
-  | Tuple (Vector Expr)
-  | GetT TupleIx Expr
-  | UpdateT TupleIx Expr Expr
+  | Record (Map Label Expr)
+  | Get Label Expr
+  | Update Label Expr Expr
   | Lam Name Expr
   | App Expr Expr
   | Var Name
-  | RecVar Name
-  | CoreCase Expr (Vector Expr)
   | Case Expr (Map Tag Expr)
   | Let Name Expr Expr
   | LetRec Name Expr Expr
-  | Prim1 Name Expr
-  | Prim2 Name Expr Expr
+  | Prim Name [Expr]
   | IOPrim Name [Expr]
   | Bind Expr Expr
   | Pure Expr

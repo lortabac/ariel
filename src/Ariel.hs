@@ -1,12 +1,10 @@
 module Ariel
-  ( module Ariel.Evaluation.Eval,
-    module Ariel.Evaluation.IO,
-    module Ariel.Syntax.AST,
+  ( module Ariel.Syntax.AST,
     module Ariel.Syntax.Types,
+    module Ariel.TC.Check,
   )
 where
 
-import Ariel.Evaluation.Eval
-import Ariel.Evaluation.IO
 import Ariel.Syntax.AST
 import Ariel.Syntax.Types
+import Ariel.TC.Check

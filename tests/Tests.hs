@@ -1,6 +1,5 @@
 module Main where
 
-import Ariel.Tests.Eval
 import Ariel.Tests.Parse
 import Test.Tasty
 
@@ -11,12 +10,7 @@ tests :: TestTree
 tests =
   testGroup
     "Tests"
-    [ evalLambdaTests,
-      evalTupleTests,
-      evalLetTests,
-      evalCaseTests,
-      evalRecursionTests,
-      parseIdentifierTests,
+    [ parseIdentifierTests,
       parseLambdaTests,
       parseLetTests,
       parseTupleTests,
