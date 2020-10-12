@@ -21,5 +21,5 @@ data Ty a
 instance Unifiable Ty
 
 -- instance Unifiable ((,) Tag)
--- 
+--
 -- instance Unifiable []

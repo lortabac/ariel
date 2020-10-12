@@ -25,7 +25,6 @@ data TCError
   deriving (Show)
 
 instance Fallible Ty IntVar TCError where
-
   occursFailure v t = InfiniteType v t
 
   mismatchFailure t1 t2 = TypeMismatch t1 t2
