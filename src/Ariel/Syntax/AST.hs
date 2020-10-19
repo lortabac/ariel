@@ -32,7 +32,7 @@ data Expr
 
 data TermDecl
   = TermDecl Name Expr
-  deriving(Eq, Show)
+  deriving (Eq, Show)
 
 data Assoc = InfixL | InfixR | InfixN
   deriving (Eq)

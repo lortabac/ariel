@@ -299,7 +299,9 @@ parsePrimary =
 
 -- all primary expr which are within braces
 parsePrimaryExprWithinBraces :: Parser Expr
-parsePrimaryExprWithinBraces = betweenBraces $ P.choice
+parsePrimaryExprWithinBraces =
+  betweenBraces $
+    P.choice
       [ parseLetRec,
         parseLet,
         parseRecord
@@ -324,7 +326,7 @@ parseLet = do
   -- try to parse let, if not don't consume
   -- otherwise parseRecord can't parse a regular field name anymore
   P.try $ keyword "let"
-  binding1  <- parseTermBinding
+  binding1 <- parseTermBinding
   restOfBindings <- P.sepBy (keyword "let" *> parseTermBinding) (symbol ";")
   let bindings = binding1 : restOfBindings
   symbol ";"
@@ -334,16 +336,15 @@ parseLet = do
 -- Parse record fields: (identifier '=' PrimaryExpr, )*
 parseRecordField :: Parser (Label, Expr)
 parseRecordField = do
-    fieldName <- parseLabel
-    symbol "="
-    fieldValue <- parsePrimary
-    return (fieldName, fieldValue)
+  fieldName <- parseLabel
+  symbol "="
+  fieldValue <- parsePrimary
+  return (fieldName, fieldValue)
 
 parseRecord :: Parser Expr
 parseRecord = do
   fields <- P.sepBy parseRecordField (symbol ",")
   return $ Record $ M.fromList fields
-
 
 -- TODO: Change rules for case
 parseCoreCase :: Parser Expr
