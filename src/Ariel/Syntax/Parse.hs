@@ -96,14 +96,24 @@ text = lexeme $ do
   str <- P.manyTill L.charLiteral (P.char '"')
   return $ T.pack str
 
-identifier :: Parser Name
-identifier = lexeme $ normalIdentifier <|> quotedIdentifier <|> symbolIdentifier
+internalIdentifier :: Parser String
+internalIdentifier = lexeme $ normalIdentifier <|> quotedIdentifier <|> symbolIdentifier
   where
-    normalIdentifier = Name <$> P.some P.letterChar
-    symbolIdentifier = Name <$> P.some (P.satisfy (\c -> isSymbol c && c /= '#'))
+    normalIdentifier = P.some P.letterChar
+    symbolIdentifier = P.some (P.satisfy (\c -> isSymbol c && c /= '#'))
     quotedIdentifier = do
       _ <- P.char '\''
-      Name <$> P.someTill L.charLiteral (P.char '\'')
+      P.someTill L.charLiteral (P.char '\'')
+
+parseLabel :: Parser Label
+parseLabel = Label <$> internalIdentifier
+
+parseName :: Parser Name
+parseName = Name <$> internalIdentifier
+
+-- TODO: Change rules for tag
+parseTag :: Parser Tag
+parseTag = Tag <$> internalIdentifier
 
 -- Parser definition
 
@@ -142,7 +152,7 @@ parseNameDecl name = do
 
 parseArgList :: Parser [Name]
 parseArgList =
-  betweenParens $ P.sepBy identifier (symbol ",")
+  betweenParens $ P.sepBy parseName (symbol ",")
 
 parseFunDecl :: Name -> Parser TermDecl
 parseFunDecl name = do
@@ -153,7 +163,7 @@ parseFunDecl name = do
 
 parseTermBinding :: Parser TermDecl
 parseTermBinding = do
-  name <- identifier
+  name <- parseName
   termBinding <- parseNameDecl name <|> parseFunDecl name
   return termBinding
 
@@ -163,7 +173,7 @@ parseOperatorDecl :: Parser (Name, OperatorInfo)
 parseOperatorDecl = do
   keyword "operator"
   symbol "("
-  opName <- identifier
+  opName <- parseName
   symbol ","
   opAssoc <- parseAssociativity
   symbol ","
@@ -187,31 +197,33 @@ parseAssociativity =
 -- Expressions
 
 -- EBNF:
--- PrimaryExpr ::= LetExpr
+-- PrimaryExpr ::= '{' PrimaryExprWithinBraces '}'
 --               | CaseExpr
 --               | PrimExpr
 --               | ConExpr
---               | LetRecExpr
 --               | LambdaExpr
 --               | identifier
 --               | Literal
 --               | '(' Expr ')'
---               | Tuple
 --
 -- ExprList ::= '(' (Expr ',')* ')'
 --
 -- Term ::= PrimaryExpr (ExprList)*
 --
+-- ExprWithinBraces ::= LetExpr
+--                    | LetRecExpr
+--                    | Record
+--
 -- Expr ::= Expr identifier Expr
 --        | Term
 --
--- Tuple ::= '{' (PrimaryExpr ',')* '}'
+-- Record ::= (identifier '=' PrimaryExpr ',')*
 --
--- LetExpr ::= 'let' Decl ',' Expr
--- LetRecExpr ::= 'let' 'rec' Decl ',' Expr
+-- LetExpr ::= ('let' Decl ';')+ Expr
+-- LetRecExpr ::= ('letrec' Decl ';')+ Expr
 -- CaseExpr ::= '#case' ExprList
 -- PrimExpr ::= '#prim' identifier ExprList
--- ConExpr ::= '#con' integer ExprList
+-- ConExpr ::= '#con' identifier ExprList
 
 parseExpr :: Parser Expr
 parseExpr =
@@ -249,14 +261,14 @@ parseExprRest currOpInfo lhs = go <|> pure lhs
     go :: Parser Expr
     go = do
       -- peek the next operator
-      newOp <- P.lookAhead identifier
+      newOp <- P.lookAhead parseName
       newOpInfo <- lookupOperator newOp
       case currOpInfo `comparePrec` newOpInfo of
         CannotMix -> fail "Cannot mix operators"
         LeftBindsTighter -> return lhs
         RightBindsTighter -> do
           -- consume the operator
-          _ <- identifier
+          _ <- parseName
           rhs <- parseExpr' newOpInfo
           let newLhs = App (App (Var newOp) lhs) rhs
           -- Loop again
@@ -276,65 +288,88 @@ parseTerm = do
 parsePrimary :: Parser Expr
 parsePrimary =
   P.choice
-    [ parseLetRec,
-      parseLet,
+    [ parsePrimaryExprWithinBraces,
       parsePrimitive,
       parseCoreCase,
       parseCoreConstructor,
       parsePrimaryStartingWithIdent,
       parsePrimaryStartingWithParen,
-      parseLiteral,
-      parseTuple
+      parseLiteral
     ]
 
--- non recursive let expression
-parseLet :: Parser Expr
-parseLet = do
-  keyword "let"
-  (TermDecl name binding) <- parseTermBinding
-  symbol ","
-  expr <- parseExpr
-  return $ Let name binding expr
+-- all primary expr which are within braces
+parsePrimaryExprWithinBraces :: Parser Expr
+parsePrimaryExprWithinBraces = betweenBraces $ P.choice
+      [ parseLetRec,
+        parseLet,
+        parseRecord
+      ]
 
 -- recursive let expression
 parseLetRec :: Parser Expr
 parseLetRec = do
   -- try to parse let rec, if not don't consume
   -- otherwise parseLet can't parse a regular let statement anymore
-  P.try $ keyword "let" *> keyword "rec"
-  (TermDecl name binding) <- parseTermBinding
-  symbol ","
+  P.try $ keyword "letrec"
+  binding1 <- parseTermBinding
+  restOfBindings <- P.sepBy (keyword "letrec" *> parseTermBinding) (symbol ";")
+  let bindings = binding1 : restOfBindings
+  symbol ";"
   expr <- parseExpr
-  return $ LetRec name binding expr
+  return $ MultiLetRec bindings expr
 
+-- non recursive let expression
+parseLet :: Parser Expr
+parseLet = do
+  -- try to parse let, if not don't consume
+  -- otherwise parseRecord can't parse a regular field name anymore
+  P.try $ keyword "let"
+  binding1  <- parseTermBinding
+  restOfBindings <- P.sepBy (keyword "let" *> parseTermBinding) (symbol ";")
+  let bindings = binding1 : restOfBindings
+  symbol ";"
+  expr <- parseExpr
+  return $ MultiLet bindings expr
+
+-- Parse record fields: (identifier '=' PrimaryExpr, )*
+parseRecordField :: Parser (Label, Expr)
+parseRecordField = do
+    fieldName <- parseLabel
+    symbol "="
+    fieldValue <- parsePrimary
+    return (fieldName, fieldValue)
+
+parseRecord :: Parser Expr
+parseRecord = do
+  fields <- P.sepBy parseRecordField (symbol ",")
+  return $ Record $ M.fromList fields
+
+
+-- TODO: Change rules for case
 parseCoreCase :: Parser Expr
 parseCoreCase = do
   keyword "#case"
   e <- parseExpr
   cases <- parseExprArgList
-  return $ CoreCase e (V.fromList cases)
+  return $ Case e (V.fromList cases)
 
 parsePrimitive :: Parser Expr
 parsePrimitive = do
   keyword "#prim"
-  name <- identifier
+  name <- parseName
   args <- parseExprArgList
-  case args of
-    [a1] -> return $ Prim1 name a1
-    [a1, a2] -> return $ Prim2 name a1 a2
-    _ -> fail "Wrong number of arguments for primitive"
+  return $ Prim name args
 
 parseCoreConstructor :: Parser Expr
 parseCoreConstructor = do
   keyword "#con"
-  index <- integer
-  when (index < 0) $ fail "The index must be a non negative integer"
+  tag <- parseTag
   args <- parseExprArgList
-  return $ CoreCons (ConsIx index) args
+  return $ Cons tag args
 
 parsePrimaryStartingWithIdent :: Parser Expr
 parsePrimaryStartingWithIdent = do
-  ident <- identifier
+  ident <- parseName
   P.choice
     [ parseSingleArgLambda ident,
       pure (Var ident)
@@ -366,12 +401,6 @@ parseLiteral =
       Int <$> integer,
       Text <$> text
     ]
-
--- Parse tuples of form '{' (PrimaryExpr, )* '}'
-parseTuple :: Parser Expr
-parseTuple = do
-  exprs <- betweenBraces $ P.sepBy parsePrimary (symbol ",")
-  return $ Tuple $ V.fromList exprs
 
 -- Run parser and in case of error pretty print the error message
 runParser :: Parser a -> Text -> Either String a

@@ -21,7 +21,9 @@ data Expr
   | Var Name
   | Case Expr (Map Tag Expr)
   | Let Name Expr Expr
+  | MultiLet [TermDecl] Expr
   | LetRec Name Expr Expr
+  | MultiLetRec [TermDecl] Expr
   | Prim Name [Expr]
   | IOPrim Name [Expr]
   | Bind Expr Expr
@@ -30,6 +32,7 @@ data Expr
 
 data TermDecl
   = TermDecl Name Expr
+  deriving(Eq, Show)
 
 data Assoc = InfixL | InfixR | InfixN
   deriving (Eq)
