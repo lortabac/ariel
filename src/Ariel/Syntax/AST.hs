@@ -13,19 +13,22 @@ data Expr
   | Double Double
   | Text Text
   | Cons Tag [Expr]
-  | Record (Map Label Expr)
+  | QCons QTag [Expr]
+  | Record Name (Map Label Expr)
+  | QRecord QName (Map Label Expr)
   | Get Label Expr
-  | Update Label Expr Expr
+  | QGet QLabel Expr
   | Lam Name Expr
+  | MultiLam [Name] Expr
   | App Expr Expr
+  | MultiApp Expr [Expr]
   | Var Name
+  | QVar QName
   | Case Expr (Map Tag Expr)
   | Let Name Expr Expr
   | MultiLet [TermDecl] Expr
   | LetRec Name Expr Expr
   | MultiLetRec [TermDecl] Expr
-  | Prim Name [Expr]
-  | IOPrim Name [Expr]
   | Bind Expr Expr
   | Pure Expr
   deriving (Eq, Show)
@@ -37,10 +40,11 @@ data TermDecl
 data Assoc = InfixL | InfixR | InfixN
   deriving (Eq)
 
-data OperatorInfo = OperatorInfo
-  { assoc :: Assoc,
-    prec :: Int
-  }
+data OperatorInfo
+  = OperatorInfo
+      { assoc :: Assoc,
+        prec :: Int
+      }
 
 data Decl
   = TermBinding TermDecl
@@ -66,23 +70,33 @@ variadicApply f args = foldl' App f args
 
 infixr 1 ==>
 
+(===>) :: [Name] -> Expr -> Expr
+(===>) = MultiLam
+
+infixr 2 ===>
+
 -- | Convenience operator for applications
-(@@) :: Expr -> Expr -> Expr
-(@@) = App
+(@@) :: Expr -> [Expr] -> Expr
+(@@) = MultiApp
 
 infixl 9 @@
 
--- | Convenience operator for let expressions
-in_ :: (Name, Expr) -> Expr -> Expr
-in_ (n, e1) e2 = Let n e1 e2
+(=:) :: Name -> Expr -> TermDecl
+(=:) = TermDecl
 
-infixr 2 `in_`
+infix 4 =:
+
+-- | Convenience operator for let expressions
+ins :: [TermDecl] -> Expr -> Expr
+ins = MultiLet
+
+infixr 2 `ins`
 
 -- | Convenience operator for let rec expressions
-inrec :: (Name, Expr) -> Expr -> Expr
-inrec (n, e1) e2 = LetRec n e1 e2
+inrecs :: [TermDecl] -> Expr -> Expr
+inrecs = MultiLetRec
 
-infixr 2 `inrec`
+infixr 2 `inrecs`
 
 -- | Convenience operator for bind
 (>>==) :: Expr -> Expr -> Expr

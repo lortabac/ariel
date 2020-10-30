@@ -12,7 +12,5 @@ tests =
     "Tests"
     [ parseIdentifierTests,
       parseLambdaTests,
-      parseLetTests,
-      parseTupleTests,
-      parseCoreCon
+      parseLetTests
     ]

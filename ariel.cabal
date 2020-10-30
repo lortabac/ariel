@@ -21,6 +21,7 @@ library
                      , Ariel.Syntax.Parse
                      , Ariel.Syntax.Ty
                      , Ariel.Syntax.Types
+                     , Ariel.TC.Builder
                      , Ariel.TC.Check
                      , Ariel.TC.Constraints
                      , Ariel.TC.Context
@@ -31,10 +32,11 @@ library
                      , bytestring
                      , containers
                      , megaparsec
-                     , logict
+                     , microlens
+                     , microlens-th
                      , mtl
                      , text
-                     , unification-fd >=0.12
+                     , unification-fd >=0.13
                      , vector
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -49,7 +51,7 @@ executable ariel
                      , containers
                      , mtl
                      , text
-                     , unification-fd >=0.12
+                     , unification-fd >=0.13
                      , vector
   hs-source-dirs:      src
   default-language:    Haskell2010

@@ -15,11 +15,12 @@ data Ty a
   | TDouble
   | TText
   | TArr a a
-  | TVar Name
+  | TVar TyVar
+  | Forall [TyVar] a
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable, Generic1)
 
 instance Unifiable Ty
 
 -- instance Unifiable ((,) Tag)
---
--- instance Unifiable []
+
+instance Unifiable []

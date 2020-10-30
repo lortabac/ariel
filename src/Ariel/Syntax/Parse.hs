@@ -18,7 +18,6 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T (pack)
-import qualified Data.Vector as V
 import Data.Void
 import qualified Text.Megaparsec as P
 import qualified Text.Megaparsec.Char as P
@@ -159,7 +158,7 @@ parseFunDecl name = do
   args <- parseArgList
   symbol "="
   expr <- parseExpr
-  return $ TermDecl name (variadicLambda args expr)
+  return $ TermDecl name (MultiLam args expr)
 
 parseTermBinding :: Parser TermDecl
 parseTermBinding = do
@@ -282,15 +281,16 @@ parseTerm :: Parser Expr
 parseTerm = do
   primary <- parsePrimary
   argLists <- many parseExprArgList
-  -- Function application is left associative
-  pure $ variadicApply primary (concat argLists)
+  case argLists of
+    [] -> pure primary
+    xs -> pure $ MultiApp primary (concat xs)
 
 parsePrimary :: Parser Expr
 parsePrimary =
   P.choice
     [ parsePrimaryExprWithinBraces,
-      parsePrimitive,
-      parseCoreCase,
+      -- parsePrimitive,
+      -- parseCoreCase,
       parseCoreConstructor,
       parsePrimaryStartingWithIdent,
       parsePrimaryStartingWithParen,
@@ -303,8 +303,8 @@ parsePrimaryExprWithinBraces =
   betweenBraces $
     P.choice
       [ parseLetRec,
-        parseLet,
-        parseRecord
+        parseLet
+        -- parseRecord
       ]
 
 -- recursive let expression
@@ -341,25 +341,18 @@ parseRecordField = do
   fieldValue <- parsePrimary
   return (fieldName, fieldValue)
 
-parseRecord :: Parser Expr
-parseRecord = do
-  fields <- P.sepBy parseRecordField (symbol ",")
-  return $ Record $ M.fromList fields
+-- parseRecord :: Parser Expr
+-- parseRecord = do
+--   fields <- P.sepBy parseRecordField (symbol ",")
+--   return $ Record $ M.fromList fields
 
 -- TODO: Change rules for case
-parseCoreCase :: Parser Expr
-parseCoreCase = do
-  keyword "#case"
-  e <- parseExpr
-  cases <- parseExprArgList
-  return $ Case e (V.fromList cases)
-
-parsePrimitive :: Parser Expr
-parsePrimitive = do
-  keyword "#prim"
-  name <- parseName
-  args <- parseExprArgList
-  return $ Prim name args
+-- parseCoreCase :: Parser Expr
+-- parseCoreCase = do
+--   keyword "#case"
+--   e <- parseExpr
+--   cases <- parseExprArgList
+--   return $ Case e (V.fromList cases)
 
 parseCoreConstructor :: Parser Expr
 parseCoreConstructor = do
@@ -393,7 +386,7 @@ parsePrimaryStartingWithParen = parseMultiArgLambda <|> betweenParens parseExpr
       -- we are sure that what's coming ahead must be a lambda expression
       args <- P.try $ parseArgList <* symbol "=>"
       expr <- parseExpr
-      return $ variadicLambda args expr
+      return $ MultiLam args expr
 
 parseLiteral :: Parser Expr
 parseLiteral =
