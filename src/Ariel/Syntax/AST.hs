@@ -40,11 +40,10 @@ data TermDecl
 data Assoc = InfixL | InfixR | InfixN
   deriving (Eq)
 
-data OperatorInfo
-  = OperatorInfo
-      { assoc :: Assoc,
-        prec :: Int
-      }
+data OperatorInfo = OperatorInfo
+  { assoc :: Assoc,
+    prec :: Int
+  }
 
 data Decl
   = TermBinding TermDecl
