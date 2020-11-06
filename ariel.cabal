@@ -21,11 +21,10 @@ library
                      , Ariel.Syntax.Parse
                      , Ariel.Syntax.Ty
                      , Ariel.Syntax.Types
-                     , Ariel.TC.Builder
                      , Ariel.TC.Check
                      , Ariel.TC.Constraints
                      , Ariel.TC.Context
-                     , Ariel
+                     , Ariel.Builder
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.12 && <5
@@ -44,7 +43,6 @@ library
 
 executable ariel
   main-is:             Main.hs
-  other-modules:       Ariel
   -- other-extensions:
   build-depends:       base >=4.12 && <5
                      , bytestring

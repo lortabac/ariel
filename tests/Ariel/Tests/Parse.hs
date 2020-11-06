@@ -8,7 +8,8 @@ module Ariel.Tests.Parse
   )
 where
 
-import Ariel
+import Ariel.Builder
+import Ariel.Syntax.AST
 import Ariel.Syntax.Parse
 import Data.Either (isLeft)
 import Test.Tasty

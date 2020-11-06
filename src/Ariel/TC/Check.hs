@@ -28,6 +28,8 @@ type TyCtx = Ctx TyTerm
 data TCError
   = InfiniteType IntVar TyTerm
   | TypeMismatch (Ty TyTerm) (Ty TyTerm)
+  | SubsumptionError TyTerm TyTerm
+  | InvalidApplicand TyTerm
   | NotInScope Name
   | GlobalNotInScope GName
   | TyVarNotInScope TyVar
@@ -111,7 +113,8 @@ typecheck expr =
     Left err -> throwError err
     Right (ty, constrs) -> runConstrM bindings $ do
       _ <- applyConstrs constrs
-      generalize =<< applyBindings ty
+      ty' <- applyBindings ty
+      generalize ty'
   where
     (res, bindings) = runInferM $ infer expr
 
@@ -135,14 +138,39 @@ infer (Lam name e) =
     bodyTy <- local (over localCtx (extendLocalCtx name varTy)) $ infer e
     pure $ UTerm (TArr varTy bodyTy)
 infer (App e1 e2) = do
-  ty1 <- infer e1
-  ty2 <- infer e2
-  appTy <- freeUVar
-  addEqConstr ty1 (UTerm (TArr ty2 appTy))
-  pure appTy
+  ty <- infer e1
+  case ty of
+    UTerm (TArr s1 s2) -> do
+      s1' <- generalize =<< infer e2
+      -- FIXME freshening is expensive
+      fs1 <- freshen s1
+      fs1' <- freshen s1'
+      dsk <- dskSubsumes fs1' fs1
+      if dsk
+        then do
+          rh1 <- instantiate s1'
+          rh2 <- instantiate s2
+          addEqConstr ty (UTerm (TArr rh1 rh2))
+          pure rh2
+        else throwError (SubsumptionError s1' s1)
+    t -> throwError (InvalidApplicand t)
 infer (Let name e body) = do
   s <- generalize =<< infer e
   local (over localCtx (extendLocalCtx name s)) $ infer body
+infer (Annot e ty) = do
+  let s = unfreeze ty
+  s' <- generalize =<< infer e
+  -- FIXME freshening is expensive
+  fs <- freshen s
+  fs' <- freshen s'
+  dsk <- dskSubsumes fs' fs
+  if dsk
+    then do
+      rh <- instantiate s
+      rh' <- instantiate s'
+      addEqConstr rh rh'
+      pure rh
+    else throwError (SubsumptionError s' s)
 
 instantiate :: TyTerm -> InferM TyTerm
 instantiate (UTerm (Forall vars e)) = do
@@ -187,28 +215,44 @@ getTyVar :: MonadError TCError m => TyTerm -> m TyVar
 getTyVar (UTerm (TVar v)) = pure v
 getTyVar t = throwError $ ImpossibleHappened ("Expected TVar but found " <> show t)
 
-weakPrenex :: MonadError TCError m => TyTerm -> m TyTerm
-weakPrenex = go
+dskSubsumes :: TyTerm -> TyTerm -> InferM Bool
+dskSubsumes s1 s2 = do
+  case weakPrenex s2 of
+    UTerm (Forall vars rh) ->
+      let (_, rh') = renameVarsIn (freeTyVars s1) vars rh
+       in dskSubsumes_ s1 rh'
+    _ -> pure True
+
+dskSubsumes_ :: TyTerm -> TyTerm -> InferM Bool
+dskSubsumes_ (UTerm (TArr s1 s2)) (UTerm (TArr s3 s4)) =
+  (&&) <$> dskSubsumes s3 s1 <*> dskSubsumes_ s2 s4
+dskSubsumes_ s1 s2 = do
+  s1' <- instantiate s1
+  s2' <- instantiate s2
+  subsumes s1' s2'
+
+weakPrenex :: TyTerm -> TyTerm
+weakPrenex (UTerm TInt) = UTerm TInt
+weakPrenex (UTerm TDouble) = UTerm TDouble
+weakPrenex (UTerm TText) = UTerm TText
+weakPrenex (UTerm (TVar v)) = UTerm (TVar v)
+weakPrenex (UVar v) = UVar v
+weakPrenex t@(UTerm (TArr s1 s2)) = case weakPrenex s2 of
+  UTerm (Forall tyVars r2) ->
+    let (tyVars', r2') = renameVarsIn (freeTyVars s1) tyVars r2
+     in UTerm (Forall tyVars' (UTerm (TArr s1 r2')))
+  _ -> t
+weakPrenex t@(UTerm (Forall tyVars r1)) = case weakPrenex r1 of
+  UTerm (Forall tyVars' r2) ->
+    let (renamedTyVars, r2') = renameVarsIn tyVars tyVars' r2
+     in UTerm (Forall (tyVars ++ renamedTyVars) r2')
+  _ -> t
+
+renameVarsIn :: [TyVar] -> [TyVar] -> TyTerm -> ([TyVar], TyTerm)
+renameVarsIn taken new t = (renamed, t')
   where
-    go (UTerm TInt) = pure $ UTerm TInt
-    go (UTerm TDouble) = pure $ UTerm TDouble
-    go (UTerm TText) = pure $ UTerm TText
-    go (UTerm (TVar v)) = pure $ UTerm (TVar v)
-    go (UVar v) = pure $ UVar v
-    go t@(UTerm (TArr s1 s2)) = do
-      pr2 <- go s2
-      case pr2 of
-        UTerm (Forall tyVars r2) ->
-          pure $ UTerm (Forall tyVars (UTerm (TArr s1 r2)))
-        _ -> pure t
-    go t@(UTerm (Forall tyVars r1)) = do
-      pr1 <- go r1
-      case pr1 of
-        UTerm (Forall tyVars' r2) -> do
-          let (renamedTyVars, substs) = freshenTyVars tyVars tyVars'
-          r2' <- applySubsts substs r2
-          pure $ UTerm (Forall (tyVars ++ renamedTyVars) r2')
-        _ -> pure t
+    (renamed, substs) = freshenTyVars taken new
+    t' = applySubsts substs t
 
 freshenTyVars :: [TyVar] -> [TyVar] -> ([TyVar], Map TyVar TyVar)
 freshenTyVars taken = foldr freshenTyVar ([], Map.empty)
@@ -220,18 +264,29 @@ freshenTyVars taken = foldr freshenTyVar ([], Map.empty)
            in (tyVar' : vars, Map.insert (TyVar v) tyVar' subs)
         else (tv : vars, subs)
 
-applySubsts :: MonadError TCError m => Map TyVar TyVar -> TyTerm -> m TyTerm
+freeTyVars :: TyTerm -> [TyVar]
+freeTyVars = go []
+  where
+    go _ (UTerm TInt) = []
+    go _ (UTerm TText) = []
+    go _ (UTerm TDouble) = []
+    go taken (UTerm (TArr ty1 ty2)) = go taken ty1 ++ go taken ty2
+    go taken (UTerm (TVar tv)) = if tv `elem` taken then [] else [tv]
+    go taken (UTerm (Forall vars t)) = go (vars ++ taken) t
+    go _ (UVar _) = []
+
+applySubsts :: Map TyVar TyVar -> TyTerm -> TyTerm
 applySubsts subts = go
   where
-    go (UTerm TInt) = pure $ UTerm TInt
-    go (UTerm TText) = pure $ UTerm TText
-    go (UTerm TDouble) = pure $ UTerm TDouble
-    go (UTerm (TArr ty1 ty2)) = (\t1 t2 -> UTerm (TArr t1 t2)) <$> go ty1 <*> go ty2
-    go (UTerm (TVar tv)) = case Map.lookup tv subts of
-      Just tv' -> pure $ UTerm (TVar tv')
-      Nothing -> throwError $ ImpossibleHappened ("TyVar " <> show tv <> " is not in the substitution map")
-    go (UTerm (Forall vars t)) = UTerm . Forall vars <$> go t
-    go (UVar v) = pure $ UVar v
+    go (UTerm TInt) = UTerm TInt
+    go (UTerm TText) = UTerm TText
+    go (UTerm TDouble) = UTerm TDouble
+    go (UTerm (TArr ty1 ty2)) = UTerm (TArr (go ty1) (go ty2))
+    go t@(UTerm (TVar tv)) = case Map.lookup tv subts of
+      Just tv' -> UTerm (TVar tv')
+      Nothing -> t
+    go (UTerm (Forall vars t)) = UTerm (Forall vars (go t))
+    go (UVar v) = UVar v
 
 ctxFreeVars ::
   (MonadError TCError m, BindingMonad Ty IntVar m, MonadReader (Ctx TyTerm) m) =>

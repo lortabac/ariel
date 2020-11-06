@@ -2,10 +2,12 @@
 
 module Ariel.Syntax.AST where
 
+import Ariel.Syntax.Ty
 import Ariel.Syntax.Types
 import Data.List (foldl')
 import Data.Map (Map)
 import Data.Text (Text)
+import Data.Functor.Fixedpoint (Fix)
 
 -- | Ariel expression
 data Expr
@@ -31,6 +33,7 @@ data Expr
   | MultiLetRec [TermDecl] Expr
   | Bind Expr Expr
   | Pure Expr
+  | Annot Expr (Fix Ty)
   deriving (Eq, Show)
 
 data TermDecl
@@ -63,43 +66,3 @@ variadicLambda xs e = foldr Lam e xs
 --   multiple arguments, left associatively
 variadicApply :: Expr -> [Expr] -> Expr
 variadicApply f args = foldl' App f args
-
--- | Convenience operator for lambdas
-(==>) :: Name -> Expr -> Expr
-(==>) = Lam
-
-infixr 1 ==>
-
-(===>) :: [Name] -> Expr -> Expr
-(===>) = MultiLam
-
-infixr 2 ===>
-
--- | Convenience operator for applications
-(@@) :: Expr -> [Expr] -> Expr
-(@@) = MultiApp
-
-infixl 9 @@
-
-(=:) :: Name -> Expr -> TermDecl
-(=:) = TermDecl
-
-infix 4 =:
-
--- | Convenience operator for let expressions
-ins :: [TermDecl] -> Expr -> Expr
-ins = MultiLet
-
-infixr 2 `ins`
-
--- | Convenience operator for let rec expressions
-inrecs :: [TermDecl] -> Expr -> Expr
-inrecs = MultiLetRec
-
-infixr 2 `inrecs`
-
--- | Convenience operator for bind
-(>>==) :: Expr -> Expr -> Expr
-(>>==) = Bind
-
-infixl 1 >>==
