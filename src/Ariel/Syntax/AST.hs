@@ -4,10 +4,10 @@ module Ariel.Syntax.AST where
 
 import Ariel.Syntax.Ty
 import Ariel.Syntax.Types
+import Data.Functor.Fixedpoint (Fix)
 import Data.List (foldl')
 import Data.Map (Map)
 import Data.Text (Text)
-import Data.Functor.Fixedpoint (Fix)
 
 -- | Ariel expression
 data Expr

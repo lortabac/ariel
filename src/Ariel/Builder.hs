@@ -1,20 +1,21 @@
-module Ariel.Builder (
-    (==>)
-  , (===>)
-  , (@@)
-  , (=:)
-  , ins
-  , inrecs
-  , (>>==)
-  , tInt
-  , tText
-  , tDouble
-  , (-->)
-  , tVar
-  , forall
-  , unsafeFreeze
-  , module Ariel.TC.Check
-) where
+module Ariel.Builder
+  ( (==>),
+    (===>),
+    (@@),
+    (=:),
+    ins,
+    inrecs,
+    (>>==),
+    tInt,
+    tText,
+    tDouble,
+    (-->),
+    tVar,
+    forall,
+    unsafeFreeze,
+    module Ariel.TC.Check,
+  )
+where
 
 import Ariel.Syntax.AST
 import Ariel.Syntax.Ty
