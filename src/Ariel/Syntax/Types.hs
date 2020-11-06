@@ -47,5 +47,5 @@ tyVarSupply = go (TyVar "a")
 nextTyVar :: TyVar -> TyVar
 nextTyVar (TyVar "z") = TyVar "z1"
 nextTyVar (TyVar [c]) = TyVar ([succ c])
-nextTyVar (TyVar ('z':i)) = TyVar ('z' : show (read i + 1 :: Int))
+nextTyVar (TyVar ('z' : i)) = TyVar ('z' : show (read i + 1 :: Int))
 nextTyVar (TyVar tv) = error ("Invalid nextTyVar: " <> tv)

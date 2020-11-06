@@ -19,7 +19,7 @@ import Data.Functor.Identity
 import Data.List ((\\))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Lens.Micro ((^.), over)
+import Lens.Micro (over, (^.))
 
 type TyTerm = UTerm Ty IntVar
 
@@ -37,7 +37,6 @@ data TCError
   deriving (Show)
 
 instance Fallible Ty IntVar TCError where
-
   occursFailure v t = InfiniteType v t
 
   mismatchFailure t1 t2 = TypeMismatch t1 t2
@@ -55,7 +54,6 @@ newtype InferM a = InferM (ReaderT TyCtx (WriterT TyConstrs (ExceptT TCError (In
     )
 
 instance BindingMonad Ty IntVar InferM where
-
   lookupVar = InferM . lift . lift . lift . lookupVar
 
   freeVar = InferM . lift . lift . lift $ freeVar
@@ -72,9 +70,9 @@ runInferMWithCtx ::
   InferM a ->
   (Either TCError (a, TyConstrs), IntBindingState Ty)
 runInferMWithCtx ctx (InferM m) =
-  runIdentity
-    $ runIntBindingT
-    $ runExceptT (runWriterT (runReaderT m ctx))
+  runIdentity $
+    runIntBindingT $
+      runExceptT (runWriterT (runReaderT m ctx))
 
 newtype ConstrM a = ConstrM (ReaderT TyCtx (ExceptT TCError (IntBindingT Ty Identity)) a)
   deriving
@@ -86,7 +84,6 @@ newtype ConstrM a = ConstrM (ReaderT TyCtx (ExceptT TCError (IntBindingT Ty Iden
     )
 
 instance BindingMonad Ty IntVar ConstrM where
-
   lookupVar = ConstrM . lift . lift . lookupVar
 
   freeVar = ConstrM . lift . lift $ freeVar
@@ -104,8 +101,9 @@ runConstrMWithCtx ::
   ConstrM a ->
   Either TCError a
 runConstrMWithCtx ctx s (ConstrM m) =
-  fst $ runIdentity $
-    resumeIntBindingT (runExceptT (runReaderT m ctx)) s
+  fst $
+    runIdentity $
+      resumeIntBindingT (runExceptT (runReaderT m ctx)) s
 
 typecheck :: Expr -> Either TCError TyTerm
 typecheck expr =
