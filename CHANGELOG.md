@@ -1,4 +1,4 @@
-# Revision history for prospero
+# Revision history for ariel
 
 ## 0.1.0.0 -- YYYY-mm-dd
 
