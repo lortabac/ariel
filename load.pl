@@ -17,3 +17,5 @@
 :- use_module(src(backend/interpreter)).
 :- use_module(src(api)).
 :- use_module(src(repl)).
+
+noop.

@@ -20,7 +20,8 @@ init_backend(Backend) :-
 stop_backend(Backend) :-
     stop_scheme_repl(Backend).
 
-run_query(Backend, ArielCodes, R) :-
+run_query(Backend, ArielStr, R) :-
+    string_codes(ArielStr, ArielCodes),
     parse_expr(E, ArielCodes),
     phrase(codegen(E), BackendCodes),
     string_codes(BackendStr, BackendCodes),
