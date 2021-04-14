@@ -9,10 +9,14 @@
 :- use_module(src(syntax/operators)).
 :- use_module(src(syntax/parser)).
 :- use_module(src(syntax/pretty)).
-:- use_module(src(tc/constraints)).
+:- use_module(src(syntax/rename)).
 :- use_module(src(tc/generalize)).
 :- use_module(src(tc/infer)).
 :- use_module(src(tc/instantiate)).
+:- use_module(src(tc/unify)).
 :- use_module(src(backend/codegen)).
 :- use_module(src(backend/interpreter)).
 :- use_module(src(api)).
+
+start_repl :-
+    print("hello").

@@ -1,7 +1,8 @@
 :- module('backend/interpreter', [
     start_scheme_repl/1,
     stop_scheme_repl/1,
-    query_scheme_repl/3
+    query_scheme_repl/3,
+    exec_scheme_repl/2
 ]).
 
 :- use_module(library(process)).
@@ -21,3 +22,8 @@ query_scheme_repl(In-Out-_, Cmd, R) :-
     nl(In),
     flush_output(In),
     read_line_to_string(Out, R).
+
+exec_scheme_repl(In-_-_, Cmd) :-
+    write(In, Cmd),
+    nl(In),
+    flush_output(In).

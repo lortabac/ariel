@@ -1,6 +1,39 @@
-:- module('backend/codegen', [codegen//1]).
+:- module('backend/codegen', [generate_term_decl_code/4, generate_code/2]).
 
 :- use_module(src(syntax/operators)).
+
+generate_term_decl_code(Module, Name, E as _, CodeStr) :-
+    generate_term_decl_code(Module, Name, E, CodeStr),
+    !.
+
+generate_term_decl_code(Module, Name, E, CodeStr) :-
+    (E \= (_ as _)),
+    phrase(codegen_term_decl(Module, Name, E), Codes),
+    string_codes(CodeStr, Codes),
+    !.
+
+generate_code(E as _, CodeStr) :-
+    generate_code(E, CodeStr),
+    !.
+generate_code(E, CodeStr) :-
+    (E \= (_ as _)),
+    phrase(codegen(E), Codes),
+    string_codes(CodeStr, Codes),
+    !.
+
+codegen_term_decl(Module, Name, E) -->
+    {atom_codes(Module, ModuleCodes)},
+    {atom_codes(Name, NameCodes)},
+    open_parens,
+    "define",
+    space,
+    ModuleCodes,
+    ".",
+    NameCodes,
+    space,
+    codegen(E),
+    close_parens,
+    !.
 
 codegen(int(N)) -->
     {number_codes(N, Codes)},
@@ -12,6 +45,10 @@ codegen(string(S)) -->
     !.
 codegen(var(A)) -->
     codegen(A),
+    !.
+codegen(qvar(Module, Name)) -->
+    {atomic_list_concat([Module, ".", Name], Qname)},
+    codegen(Qname),
     !.
 codegen(A) -->
     {atom(A)},

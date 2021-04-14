@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ariel</title>
+
+<link rel="stylesheet" type="text/css" href="pldoc.css">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+</head>
+<body>
+
+
+<p>
+<i>We are such stuff as dreams are made on, and our little life is rounded with a sleep.</i> - William Shakespeare</p>
+
+<h1 class="wiki">Ariel</h1>
+
+<p>
+A simple purely-functional programming language, mainly for educational purposes.</p>
+
+<h2 class="wiki">Features</h2>
+
+<p>
+These features are under development right now:</p>
+<ul>
+<li>Strict (call-by-value) evaluation.</li>
+<li>Purity through "monadic" IO.</li>
+<li>Full type inference.</li>
+<li>Polymorphism over both record fields and constructors.</li>
+<li>Implicit parameters.</li>
+<li>Pretty-printable core language (with the same syntax as the surface language) for easy inspection.</li>
+<li>A rich REPL environment with runtime tracing and debugging facilities.</li>
+</ul>
+
+<h2 class="wiki">Wishlist</h2>
+
+<p>
+These features will be added sometime in the future:</p>
+<ul>
+<li>Built-in structural polymorphism (like Haskell's <var>Generic</var>).</li>
+<li>Native compilation via Scheme.</li>
+<li>JavaScript backend.</li>
+</ul>
+
+<h2 class="wiki">Implementation</h2>
+
+<p>
+The evaluator uses nameless environments, similarly to the LETREC interpreter
+described in Friedman, Wand. 2008. <i>Essentials of Programming Languages</i>, MIT Press.</p>
+
+<p>
+The type-checker is based on <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/putting.pdf">Peyton Jones, Vytiniotis, Weirich, Shields. 2007. <i>Practical type inference for arbitrary-rank types</i></a>,
+adapted to a query-based approach, as described in <a href="https://ollef.github.io/blog/posts/query-based-compilers.html.">https://ollef.github.io/blog/posts/query-based-compilers.html.</a></p>
+
+<h2 class="wiki">Status</h2>
+
+<p>
+The project is still in a very early phase.</p>
+
+<h2 class="wiki subdirs">Sub directories</h2>
+
+<table class="subdirs">
+<tr><td><a class="subdir" href="src/index.html">[dir] src</a></td></tr>
+<tr><td><a class="subdir" href="tests/index.html">[dir] tests</a></td></tr>
+</table>
+
+<h2 class="wiki plfiles">Prolog files</h2>
+
+<table class="summary">
+<tr><th colspan="3" class="file"><span style="float:left"><a href="load.html">load.pl</a></span><span style="float:right"></span></th></tr>
+<tr><th colspan="3" class="file"><span style="float:left"><a href="load_dev.html">load_dev.pl</a></span><span style="float:right"></span></th></tr>
+</table>
+
+</body>
+</html>

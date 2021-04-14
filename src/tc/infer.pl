@@ -1,42 +1,60 @@
-:- module('tc/infer', [typecheck/2, infer/3, infer_gen/3]).
+:- module('tc/infer', [typecheck_ng/2, typecheck/3]).
 
 :- use_module(library(assoc)).
 :- use_module(src(syntax/operators)).
 :- use_module(src(tc/generalize)).
 :- use_module(src(tc/instantiate)).
+:- use_module(src(tc/unify)).
 
-typecheck(E, T) :-
+typecheck_ng(E, T) :-
+    empty_assoc(Globals),
+    typecheck(Globals, E, T).
+
+typecheck(Globals, E, T) :-
+    typecheck_(Globals, E, T), !;
+    throw(error(type_error)).
+
+typecheck_(Globals, E, T) :-
     empty_assoc(Ctx),
-    infer_gen(Ctx, E, T),
+    infer_gen(Globals, Ctx, E, T),
     !.
 
-infer(_, int(_), t_int) :- !.
-infer(_, string(_), t_string) :- !.
-infer(Ctx, var(Name), Rh) :-
+infer(_, _, int(_), t_int) :- !.
+infer(_, _, string(_), t_string) :- !.
+infer(_, Ctx, var(Name), Rh) :-
     get_assoc(Name, Ctx, T),
     instantiate(T, Rh),
     !.
-infer(Ctx, Names => E, Rh) :-
+infer(Globals, _, qvar(Module, Name), Rh) :-
+    get_assoc(Module-Name, Globals, T),
+    instantiate(T, Rh),
+    !.
+infer(Globals, Ctx, Names => E, Rh) :-
     is_list(Names),
     maplist([_]>>free_metavar, Names, MVs),
     zip(Names, MVs, Pairs),
     put_many_assoc(Pairs, Ctx, NewCtx),
-    infer(NewCtx, E, BodyT),
+    infer(Globals, NewCtx, E, BodyT),
     unify(Rh, MVs -> BodyT),
     !.
-infer(Ctx, E @ AppArgs, ResT) :-
-    infer(Ctx, E, T),
+infer(Globals, Ctx, E as S, Rh) :-
+    infer(Globals, Ctx, E, T),
+    instantiate(S, Rh),
+    check_subsumption(T, Rh),
+    !.
+infer(Globals, Ctx, E @ AppArgs, ResT) :-
+    infer(Globals, Ctx, E, T),
     unify_arr(T, AppArgs, LamArgs -> ResT),
     zip(LamArgs, AppArgs, Pairs),
-    maplist(unify_app_arg(Ctx), Pairs),
+    maplist(unify_app_arg(Globals, Ctx), Pairs),
     !.
-infer(Ctx, let(Name = Sub) in E, Rh) :-
-    infer_gen(Ctx, Sub, S),
+infer(Globals, Ctx, let(Name = Sub) in E, Rh) :-
+    infer_gen(Globals, Ctx, Sub, S),
     put_assoc(Name, Ctx, S, NewCtx),
-    infer(NewCtx, E, Rh).
+    infer(Globals, NewCtx, E, Rh).
 
-infer_gen(Ctx, E, S) :-
-    infer(Ctx, E, Rh),
+infer_gen(Globals, Ctx, E, S) :-
+    infer(Globals, Ctx, E, Rh),
     generalize(Ctx, Rh, S).
 
 unify_arr(T, Args, ArgMVs -> ResMV) :-
@@ -44,11 +62,9 @@ unify_arr(T, Args, ArgMVs -> ResMV) :-
     free_metavar(ResMV),
     T = (ArgMVs -> ResMV).
 
-unify_app_arg(Ctx, LamArg-AppArg) :-
-    infer_gen(Ctx, AppArg, InferedArg),
-    subsumes_term(LamArg, InferedArg),
-    instantiate(InferedArg, InferedArgRh),
-    unify(InferedArgRh, LamArg).
+unify_app_arg(Globals, Ctx, LamArg-AppArg) :-
+    infer(Globals, Ctx, AppArg, InferedArg),
+    unify(LamArg, InferedArg).
 
 free_metavar(MV) :-
     copy_term(_, MV).

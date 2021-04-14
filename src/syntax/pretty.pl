@@ -25,6 +25,7 @@ pp_type(forall(Vars, T)) -->
     pp_type(T),
     !.
 pp_type(tvar(V)) --> {atom_codes(V, Codes)}, Codes, !.
+pp_type(V) --> {var(V)}, "<metavar>", !.
 
 parensed(X) --> open_parens, X, close_parens.
 
