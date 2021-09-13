@@ -4,10 +4,10 @@
 
 module Ariel.Common.IOPrim where
 
+import Control.DeepSeq
 import GHC.Generics
 import Language.SexpGrammar
 import Language.SexpGrammar.Generic
-import Control.DeepSeq
 
 data IOPrim e
   = WriteLn e

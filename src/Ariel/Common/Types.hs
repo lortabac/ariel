@@ -1,11 +1,11 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Ariel.Common.Types where
 
+import Control.DeepSeq
 import Data.String (IsString)
 import Data.Text (Text)
-import Control.DeepSeq
 import GHC.Generics
 
 data QName = QName Text Text deriving (Eq, Ord, Show, Generic)
