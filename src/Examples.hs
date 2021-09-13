@@ -15,7 +15,7 @@ exampleDefs = Defs
     }
 
 exampleFact :: IO Expr
-exampleFact = evalCore exampleDefs (fact @@ [Int 1000000])
+exampleFact = evalCore exampleDefs (fact @@ [Int 10000000])
   where
     fact = Fix "fact" $ ["n"] ==> Case (Prim2 IntEq (Var "n") (Int 0))
         [("false", Prim2 IntPlus (Var "n") (Var "fact" @@ [Prim2 IntMinus (Var "n") (Int 1)]))
