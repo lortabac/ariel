@@ -7,11 +7,14 @@ module Ariel.Common.IOPrim where
 import GHC.Generics
 import Language.SexpGrammar
 import Language.SexpGrammar.Generic
+import Control.DeepSeq
 
 data IOPrim e
   = WriteLn e
   | ReadLine
   deriving (Eq, Show, Functor, Generic)
+
+instance NFData e => NFData (IOPrim e)
 
 instance SexpIso e => SexpIso (IOPrim e) where
   sexpIso =

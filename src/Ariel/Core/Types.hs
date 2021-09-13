@@ -1,11 +1,14 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Ariel.Core.Types where
-
+    
 import Ariel.Common.IOPrim
 import Ariel.Common.Prim
 import Ariel.Common.Types
 import Data.Map.Strict (Map)
 import Data.Set (Set)
 import Data.Text (Text)
+import GHC.Generics
+import Control.DeepSeq
 
 data Expr
   = Int Int
@@ -22,7 +25,9 @@ data Expr
   | IOPrim (IOPrim Expr)
   | Bind Expr Expr
   | Pure Expr
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance NFData Expr
 
 -- | Convenience operator for lambdas
 (==>) :: [Text] -> Expr -> Expr
