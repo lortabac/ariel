@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Ariel.Core.Compile where
 
 import Ariel.Common.Types
-import Ariel.Core.Types (Defs(..))
+import Ariel.Core.Types (Defs (..))
 import qualified Ariel.Core.Types as Core
 import qualified Ariel.Runtime.Types as RT
 import Data.Map.Strict (Map, (!))
@@ -13,20 +14,22 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 
-compileCore :: Defs
-            -> Core.Expr
-            -> (RT.Expr, Vector RT.Expr)
+compileCore ::
+  Defs ->
+  Core.Expr ->
+  (RT.Expr, Vector RT.Expr)
 compileCore defs expr = (rtExpr, rtGlobals)
   where
     index = globalIndex (globals defs)
     rtExpr = compileCore' index defs mempty expr
     rtGlobals = compileGlobals index defs
 
-compileCore' :: Map QName Int
-             -> Defs
-             -> Map Text RT.Expr
-             -> Core.Expr
-             -> RT.Expr
+compileCore' ::
+  Map QName Int ->
+  Defs ->
+  Map Text RT.Expr ->
+  Core.Expr ->
+  RT.Expr
 compileCore' _ _ _ (Core.Int i) = RT.Int i
 compileCore' _ _ _ (Core.String s) = RT.String s
 compileCore' ix defs env (Core.Con qn tag es) = RT.Con tag (getIndex qn tag (sumTypes defs)) $ fmap (compileCore' ix defs env) es
@@ -51,7 +54,7 @@ compileGlobals :: Map QName Int -> Defs -> Vector RT.Expr
 compileGlobals index defs = fmap (compileCore' index defs mempty) $ Vector.fromList $ Map.elems (globals defs)
 
 globalIndex :: Map QName Core.Expr -> Map QName Int
-globalIndex = Map.fromList . flip zip [0..] . Map.keys
+globalIndex = Map.fromList . flip zip [0 ..] . Map.keys
 
 getIndex :: QName -> Tag -> Map QName (Set Tag) -> Int
 getIndex qn tag st = Set.findIndex tag (st ! qn)
