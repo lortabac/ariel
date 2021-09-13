@@ -1,15 +1,15 @@
-{-# LANGUAGE StrictData #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE StrictData #-}
 
 module Ariel.Syntax.AST where
 
 import Ariel.Syntax.Types
+import Control.DeepSeq
 import Data.List (foldl')
 import Data.Map (Map)
 import Data.Text (Text)
 import Data.Vector (Vector)
 import GHC.Generics
-import Control.DeepSeq
 
 -- | Ariel expression
 data Expr

@@ -19,13 +19,13 @@ module Ariel.Evaluation.Types
 where
 
 import Ariel.Syntax.Types
+import Control.DeepSeq
 import Data.Coerce (coerce)
 import Data.Sequence (Seq, (<|))
 import qualified Data.Sequence as Seq
 import Data.Text (Text)
 import Data.Vector (Vector)
 import GHC.Generics (Generic)
-import Control.DeepSeq
 
 -- | Nameless core expression
 data Expr

@@ -1,9 +1,10 @@
 module Main where
 
-import Examples
 import Criterion.Main
+import Examples
 
 main :: IO ()
-main = defaultMain
-     [ bench "benchmark sum" $ nfIO (example_Sum 1000000)
-     ]
+main =
+  defaultMain
+    [ bench "benchmark sum" $ nfIO (example_Sum 1000000)
+    ]
