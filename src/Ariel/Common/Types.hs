@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Ariel.Common.Types where
 
 import Data.String (IsString)
