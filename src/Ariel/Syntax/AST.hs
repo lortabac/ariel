@@ -1,4 +1,5 @@
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Ariel.Syntax.AST where
 
@@ -7,6 +8,8 @@ import Data.List (foldl')
 import Data.Map (Map)
 import Data.Text (Text)
 import Data.Vector (Vector)
+import GHC.Generics
+import Control.DeepSeq
 
 -- | Ariel expression
 data Expr
@@ -31,7 +34,9 @@ data Expr
   | IOPrim Name [Expr]
   | Bind Expr Expr
   | Pure Expr
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance NFData Expr
 
 data TermDecl
   = TermDecl Name Expr

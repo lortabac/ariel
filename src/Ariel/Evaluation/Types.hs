@@ -25,6 +25,7 @@ import qualified Data.Sequence as Seq
 import Data.Text (Text)
 import Data.Vector (Vector)
 import GHC.Generics (Generic)
+import Control.DeepSeq
 
 -- | Nameless core expression
 data Expr
@@ -51,10 +52,14 @@ data Expr
   | Pure Expr
   deriving (Eq, Show, Generic)
 
+instance NFData Expr
+
 -- | Primitive pure unary operation
 data Prim1
   = ShowInt
-  deriving (Eq, Read, Show)
+  deriving (Eq, Read, Show, Generic)
+
+instance NFData Prim1
 
 -- | Primitive pure binary operation
 data Prim2
@@ -62,7 +67,9 @@ data Prim2
   | Plus
   | Minus
   | ConcatText
-  deriving (Eq, Read, Show)
+  deriving (Eq, Read, Show, Generic)
+
+instance NFData Prim2
 
 readPrim1 :: Name -> Prim1
 readPrim1 = read . coerce
@@ -74,7 +81,9 @@ readPrim2 = read . coerce
 data IOPrim
   = WriteLn
   | ReadLine
-  deriving (Eq, Read, Show)
+  deriving (Eq, Read, Show, Generic)
+
+instance NFData IOPrim
 
 readIOPrim :: Name -> IOPrim
 readIOPrim = read . coerce
@@ -83,7 +92,9 @@ readIOPrim = read . coerce
 type Env = Env' Expr
 
 data Env' a = Env {_env :: (Seq a), _recEnv :: (Seq a)}
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance NFData a => NFData (Env' a)
 
 -- | Create an empty environment
 emptyEnv :: Env
