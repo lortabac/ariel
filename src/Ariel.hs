@@ -1,12 +1,13 @@
-module Ariel
-  ( module Ariel.Evaluation.Eval,
-    module Ariel.Evaluation.IO,
-    module Ariel.Syntax.AST,
-    module Ariel.Syntax.Types,
-  )
-where
+module Ariel (
+    module Ariel.Common.IOPrim
+  , module Ariel.Common.Prim
+  , module Ariel.Core.Run
+  , module Ariel.Core.Types
+    ) where
 
-import Ariel.Evaluation.Eval
-import Ariel.Evaluation.IO
-import Ariel.Syntax.AST
-import Ariel.Syntax.Types
+import Ariel.Common.IOPrim
+import Ariel.Common.Prim
+import Ariel.Core.Run
+import Ariel.Core.Types
+import Ariel.Language.Desugar
+import Ariel.Language.Types

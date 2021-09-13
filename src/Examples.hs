@@ -3,8 +3,21 @@
 
 module Examples where
 
-import Ariel
+import Ariel.Common.Prim
+import Ariel.Common.Types
+import Ariel.Core.Run
+import Ariel.Core.Types
 
-example_Sum =
-  evalNamed $
-    ("sum", "n" ==> CoreCase (Prim2 "Eq" (Var "n") (Int 0)) [Prim2 "Plus" (Var "sum" @@ Prim2 "Minus" (Var "n") (Int 1)) (Var "n"), Int 0]) `inrec` Var "sum" @@ Int 10000000
+exampleDefs :: Defs
+exampleDefs = Defs
+    { globals = mempty
+    , sumTypes = [(QName "base" "bool", ["false", "true"])]
+    }
+
+exampleFact :: IO Expr
+exampleFact = evalCore exampleDefs (fact @@ [Int 1000000])
+  where
+    fact = Fix "fact" $ ["n"] ==> Case (Prim2 IntEq (Var "n") (Int 0))
+        [("false", Prim2 IntPlus (Var "n") (Var "fact" @@ [Prim2 IntMinus (Var "n") (Int 1)]))
+        ,("true", Int 0)
+        ]
