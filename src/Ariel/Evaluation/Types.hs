@@ -23,8 +23,6 @@ import Data.Sequence (Seq(..), (<|))
 import qualified Data.Sequence as Seq
 import Data.Text (Text)
 import Data.Vector (Vector)
-import qualified Data.Vector as V
-import qualified Data.Vector.Mutable as MV
 import GHC.Generics (Generic)
 
 -- | Nameless core expression
