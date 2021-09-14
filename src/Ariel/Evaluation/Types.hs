@@ -12,7 +12,10 @@ module Ariel.Evaluation.Types
     Env,
     emptyEnv,
     extendEnv,
+    extendEnvRec,
     lookupEnv,
+    lookupEnvRec,
+    setEnvIndex,
     extendRecEnv,
     lookupRecEnv,
   )
@@ -24,6 +27,8 @@ import Data.Sequence (Seq, (<|))
 import qualified Data.Sequence as Seq
 import Data.Text (Text)
 import Data.Vector (Vector)
+import qualified Data.Vector as V
+import qualified Data.Vector.Mutable as MV
 import GHC.Generics (Generic)
 
 -- | Nameless core expression
@@ -40,7 +45,6 @@ data Expr
   | App Expr Expr
   | Var Name VarIx
   | RecVar Name VarIx
-  | InEnv Env Expr
   | Case Expr (Vector Expr)
   | Let Name Expr Expr
   | LetRec Name Expr Expr
@@ -49,6 +53,7 @@ data Expr
   | IOPrim IOPrim [Expr]
   | Bind Expr Expr
   | Pure Expr
+  | Undefined
   deriving (Eq, Show, Generic)
 
 -- | Primitive pure unary operation
@@ -82,22 +87,35 @@ readIOPrim = read . coerce
 -- | Evaluation environment
 type Env = Env' Expr
 
-data Env' a = Env {_env :: (Seq a), _recEnv :: (Seq a)}
+data Env' a = Env {_env :: Vector a, _recEnv :: Seq a}
   deriving (Eq, Show)
 
 -- | Create an empty environment
 emptyEnv :: Env
-emptyEnv = Env Seq.empty Seq.empty
+emptyEnv = Env V.empty Seq.empty
 
 -- | Append an expression to the environment
 extendEnv :: Expr -> Env -> Env
-extendEnv e (Env env recEnv) = Env (e <| env) recEnv
+extendEnv e (Env env recEnv) = Env (V.cons e env) recEnv
+
+-- | Append an expression to the environment
+extendEnvRec :: Expr -> Env -> Env
+extendEnvRec e (Env env recEnv) = Env (V.snoc env e) recEnv
 
 -- | Lookup a variable in the environment
 lookupEnv :: VarIx -> Env -> Expr
-lookupEnv (VarIx i) (Env env _) = case Seq.lookup i env of
+lookupEnv (VarIx i) (Env env _) = case env V.!? i of
   Just e -> e
   Nothing -> error ("Out of bounds variable: " <> show i)
+
+-- | Lookup a variable in the environment
+lookupEnvRec :: Env -> Expr
+lookupEnvRec (Env env _) = case env V.!? (V.length env - 1) of
+  Just e -> e
+  Nothing -> error ("Out of bounds variable: " <> show (V.length env - 1))
+
+setEnvIndex :: VarIx -> Expr -> Env -> Env
+setEnvIndex (VarIx i) e (Env env recEnv) = Env (V.modify (\v -> MV.write v i e) env) recEnv
 
 -- | Append an expression to the recursion environment
 extendRecEnv :: Expr -> Env -> Env

@@ -37,14 +37,14 @@ eval env e@(Update (TupleIx i) modify t)
          in pure $ Tuple (V.modify modifyV es)
       _ -> error ("Invalid Update: " <> show e)
   | otherwise = error ("Invalid Update: " <> show e)
-eval env (Abs x e) = pure $ Clos x e env
+eval env (Abs x e) = pure $ Clos x e (extendEnv Undefined env)
 eval _ (Clos x e env) = pure $ Clos x e env
 eval env (App e1 e2) = do
   e1' <- eval env e1
   case e1' of
     Clos _ t lamEnv -> do
       e2' <- eval env e2
-      let env' = extendEnv e2' lamEnv
+      let env' = setEnvIndex 0 e2' lamEnv
       eval env' t
     e1'' -> error ("Invalid App: " <> show (App e1'' e2))
 eval env (Let _ e1 e2) = do
@@ -52,15 +52,14 @@ eval env (Let _ e1 e2) = do
   let env' = extendEnv e1' env
   eval env' e2
 eval env (LetRec _ e1 e2) = do
-  let env' = extendRecEnv (InEnv env e1) env
-  e1' <- eval env' e1
-  let env'' = extendEnv e1' env
-  eval env'' e2
+  e1' <- eval env e1
+  let e1'' = case e1' of
+        Clos x e envir -> Clos x e (extendRecEnv e envir)
+        e -> e
+  let env' = extendEnv e1'' env
+  eval env' e2
 eval env (Var _ i) = eval env (lookupEnv i env)
-eval env (RecVar _ i) = case lookupRecEnv i env of
-  InEnv env' e -> eval (extendRecEnv (InEnv env' e) env') e
-  e' -> error ("Invalid RecVar: " <> show e')
-eval _ (InEnv env e) = eval env e
+eval env (RecVar _ i) = eval env (lookupRecEnv i env)
 eval env (Prim1 p e) = evalPrim1 p <$> eval env e
 eval env (Prim2 p e1 e2) = evalPrim2 p <$> eval env e1 <*> eval env e2
 eval env (IOPrim p args) = IOPrim p <$> traverse (eval env) args
@@ -73,6 +72,7 @@ eval env e@(Case p es) = do
       lam <- eval env (es V.! i)
       eval env (foldl App lam args)
     _ -> error ("Invalid Case: " <> show e)
+eval _ Undefined = error "Cannot evaluate Undefined"
 
 -- | Convenience function to help testing evaluation directly on Ariel expressions
 evalNamed :: AST.Expr -> IO Expr
