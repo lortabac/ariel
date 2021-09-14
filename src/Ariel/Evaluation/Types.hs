@@ -12,18 +12,14 @@ module Ariel.Evaluation.Types
     Env,
     emptyEnv,
     extendEnv,
-    extendEnvRec,
     lookupEnv,
-    lookupEnvRec,
-    setEnvIndex,
-    extendRecEnv,
-    lookupRecEnv,
+    setEnvHead,
   )
 where
 
 import Ariel.Syntax.Types
 import Data.Coerce (coerce)
-import Data.Sequence (Seq, (<|))
+import Data.Sequence (Seq(..), (<|))
 import qualified Data.Sequence as Seq
 import Data.Text (Text)
 import Data.Vector (Vector)
@@ -48,6 +44,7 @@ data Expr
   | Case Expr (Vector Expr)
   | Let Name Expr Expr
   | LetRec Name Expr Expr
+  | RecClos Expr Env
   | Prim1 Prim1 Expr
   | Prim2 Prim2 Expr Expr
   | IOPrim IOPrim [Expr]
@@ -87,42 +84,22 @@ readIOPrim = read . coerce
 -- | Evaluation environment
 type Env = Env' Expr
 
-data Env' a = Env {_env :: Vector a, _recEnv :: Seq a}
+newtype Env' a = Env (Seq a)
   deriving (Eq, Show)
 
 -- | Create an empty environment
 emptyEnv :: Env
-emptyEnv = Env V.empty Seq.empty
+emptyEnv = Env Seq.empty
 
 -- | Append an expression to the environment
 extendEnv :: Expr -> Env -> Env
-extendEnv e (Env env recEnv) = Env (V.cons e env) recEnv
-
--- | Append an expression to the environment
-extendEnvRec :: Expr -> Env -> Env
-extendEnvRec e (Env env recEnv) = Env (V.snoc env e) recEnv
+extendEnv e (Env env) = Env (e <| env)
 
 -- | Lookup a variable in the environment
 lookupEnv :: VarIx -> Env -> Expr
-lookupEnv (VarIx i) (Env env _) = case env V.!? i of
+lookupEnv (VarIx i) (Env env) = case Seq.lookup i env of
   Just e -> e
   Nothing -> error ("Out of bounds variable: " <> show i)
 
--- | Lookup a variable in the environment
-lookupEnvRec :: Env -> Expr
-lookupEnvRec (Env env _) = case env V.!? (V.length env - 1) of
-  Just e -> e
-  Nothing -> error ("Out of bounds variable: " <> show (V.length env - 1))
-
-setEnvIndex :: VarIx -> Expr -> Env -> Env
-setEnvIndex (VarIx i) e (Env env recEnv) = Env (V.modify (\v -> MV.write v i e) env) recEnv
-
--- | Append an expression to the recursion environment
-extendRecEnv :: Expr -> Env -> Env
-extendRecEnv e (Env env recEnv) = Env env (e <| recEnv)
-
--- | Lookup a variable in the recursion environment
-lookupRecEnv :: VarIx -> Env -> Expr
-lookupRecEnv (VarIx i) (Env _ recEnv) = case Seq.lookup i recEnv of
-  Just e -> e
-  Nothing -> error ("Out of bounds recursive variable: " <> show i)
+setEnvHead :: Expr -> Env -> Env
+setEnvHead e (Env (_ :<| env)) = Env (e <| env)
