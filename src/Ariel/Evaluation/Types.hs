@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE StrictData #-}
 
 module Ariel.Evaluation.Types
@@ -23,11 +24,12 @@ import Data.Sequence (Seq(..), (<|))
 import qualified Data.Sequence as Seq
 import Data.Text (Text)
 import Data.Vector (Vector)
+import GHC.Exts (Int#)
 import GHC.Generics (Generic)
 
 -- | Nameless core expression
 data Expr
-  = Int Int
+  = Int Int#
   | Double Double
   | Text Text
   | Cons ConsIx [Expr]
@@ -48,7 +50,6 @@ data Expr
   | IOPrim IOPrim [Expr]
   | Bind Expr Expr
   | Pure Expr
-  | Undefined
   deriving (Eq, Show, Generic)
 
 -- | Primitive pure unary operation

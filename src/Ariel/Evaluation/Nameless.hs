@@ -1,3 +1,4 @@
+{-# LANGUAGE MagicHash #-}
 module Ariel.Evaluation.Nameless
   ( removeNames,
   )
@@ -7,6 +8,7 @@ import Ariel.Evaluation.Types
 import qualified Ariel.Syntax.AST as AST
 import Ariel.Syntax.Types
 import Data.List (elemIndex)
+import GHC.Exts (Int(..))
 
 -- | Convert a fully-desugared AST expression to a nameless core expression
 removeNames :: AST.Expr -> Expr
@@ -21,7 +23,7 @@ removeNames' _ recCtx (AST.RecVar x) = case elemIndex x recCtx of
   Nothing -> error ("Free recursive variable " <> unName x)
 removeNames' ctx recCtx (AST.Lam x e) = Abs x (removeNames' (x : ctx) recCtx e)
 removeNames' ctx recCtx (AST.App e1 e2) = App (removeNames' ctx recCtx e1) (removeNames' ctx recCtx e2)
-removeNames' _ _ (AST.Int x) = Int x
+removeNames' _ _ (AST.Int (I# x)) = Int x
 removeNames' _ _ (AST.Double x) = Double x
 removeNames' _ _ (AST.Text x) = Text x
 removeNames' ctx recCtx (AST.CoreCons i es) = Cons i (fmap (removeNames' ctx recCtx) es)
