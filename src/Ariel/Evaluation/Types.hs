@@ -27,7 +27,7 @@ import GHC.Generics (Generic)
 
 -- | Nameless core expression
 data Expr
-  = Int {-# UNPACK #-} Int
+  = Int Int
   | Double Double
   | Text Text
   | Cons ConsIx [Expr]
@@ -95,9 +95,8 @@ extendEnv e (Env env) = Env (e <| env)
 
 -- | Lookup a variable in the environment
 lookupEnv :: VarIx -> Env -> Expr
-lookupEnv (VarIx i) (Env env) = case Seq.lookup i env of
-  Just e -> e
-  Nothing -> error ("Out of bounds variable: " <> show i)
+lookupEnv (VarIx i) (Env env) = Seq.index env i
 
 setEnvHead :: Expr -> Env -> Env
-setEnvHead e (Env (_ :<| env)) = Env (e <| env)
+setEnvHead e (Env (_ :<| env)) = Env (e :<| env)
+setEnvHead _ _ = error "Can't set head on empty environment"

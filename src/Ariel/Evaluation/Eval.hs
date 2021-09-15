@@ -37,14 +37,14 @@ eval env renv e@(Update (TupleIx i) modify t)
          in pure $ Tuple (V.modify modifyV es)
       _ -> error ("Invalid Update: " <> show e)
   | otherwise = error ("Invalid Update: " <> show e)
-eval env _ (Abs x e) = pure $ Clos x e env
+eval env _ (Abs x e) = pure $ Clos x e (extendEnv Undefined env)
 eval _ _ (Clos x e env) = pure $ Clos x e env
 eval env renv (App e1 e2) = do
   e1' <- eval env renv e1
   case e1' of
     Clos _ t lamEnv -> do
       e2' <- eval env renv e2
-      let env' = extendEnv e2' lamEnv
+      let env' = setEnvHead e2' lamEnv
       eval env' renv t
     e1'' -> error ("Invalid App: " <> show (App e1'' e2))
 eval env renv (Let _ e1 e2) = do
@@ -54,7 +54,7 @@ eval env renv (Let _ e1 e2) = do
 eval env renv (LetRec _ e1 e2) = do
   e1' <- eval env renv e1
   let env' = extendEnv e1' env
-      renv' = extendEnv (RecClos e1 renv) renv
+      renv' = extendEnv (RecClos e1' renv) renv
   eval env' renv' e2
 eval env _ (RecClos e renv) = eval env renv e
 eval env renv (Var _ i) = eval env renv (lookupEnv i env)
