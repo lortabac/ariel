@@ -14,7 +14,6 @@ module Ariel.Evaluation.Types
     emptyEnv,
     extendEnv,
     lookupEnv,
-    setEnvHead,
   )
 where
 
@@ -97,7 +96,3 @@ extendEnv e (Env env) = Env (e <| env)
 -- | Lookup a variable in the environment
 lookupEnv :: VarIx -> Env -> Expr
 lookupEnv (VarIx i) (Env env) = Seq.index env i
-
-setEnvHead :: Expr -> Env -> Env
-setEnvHead e (Env (_ :<| env)) = Env (e :<| env)
-setEnvHead _ _ = error "Can't set head on empty environment"
