@@ -6,9 +6,7 @@ import Ariel.Evaluation.Types
 import qualified Ariel.Syntax.AST as AST
 import Ariel.Syntax.Transform
 import Ariel.Syntax.Types
-import Control.Monad.ST.Unsafe
 import qualified Data.Vector as V
-import qualified Data.Vector.Mutable as MV
 
 -- | Evaluate a nameless core expression
 eval :: Env -> Env -> Expr -> IO Expr
@@ -29,12 +27,10 @@ eval env renv e@(Update (TupleIx i) modify t)
     t' <- eval env renv t
     modify' <- eval env renv modify
     case (t', modify') of
-      (Tuple es, clos@Clos {}) ->
-        let modifyV v = do
-              el <- MV.read v (i - 1)
-              el' <- unsafeIOToST $ eval env renv (App clos el)
-              MV.write v (i - 1) el'
-         in pure $ Tuple (V.modify modifyV es)
+      (Tuple es, clos@Clos {}) -> do
+        let el = es V.! (i - 1)
+        el' <- eval env renv (App clos el)
+        pure $ Tuple (es V.// [(i - 1, el')])
       _ -> error ("Invalid Update: " <> show e)
   | otherwise = error ("Invalid Update: " <> show e)
 eval env _ (Abs x e) = pure $ Clos x e env
