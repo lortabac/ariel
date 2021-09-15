@@ -55,9 +55,9 @@ eval env renv (LetRec _ e1 e2) = do
 eval env _ (RecClos e renv) = eval env renv e
 eval env renv (Var _ i) = eval env renv (lookupEnv i env)
 eval env renv (RecVar _ i) =
-    case lookupEnv i renv of
-      RecClos e renv' -> eval env renv' e
-      _ -> error "Invalid RecVar"
+  case lookupEnv i renv of
+    RecClos e renv' -> eval env renv' e
+    _ -> error "Invalid RecVar"
 eval env renv (Prim1 p e) = evalPrim1 p <$> eval env renv e
 eval env renv (Prim2 p e1 e2) = evalPrim2 p <$> eval env renv e1 <*> eval env renv e2
 eval env renv (IOPrim p args) = IOPrim p <$> traverse (eval env renv) args

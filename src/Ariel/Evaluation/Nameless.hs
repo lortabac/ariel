@@ -1,4 +1,5 @@
 {-# LANGUAGE MagicHash #-}
+
 module Ariel.Evaluation.Nameless
   ( removeNames,
   )
@@ -8,7 +9,7 @@ import Ariel.Evaluation.Types
 import qualified Ariel.Syntax.AST as AST
 import Ariel.Syntax.Types
 import Data.List (elemIndex)
-import GHC.Exts (Int(..))
+import GHC.Exts (Int (..))
 
 -- | Convert a fully-desugared AST expression to a nameless core expression
 removeNames :: AST.Expr -> Expr
