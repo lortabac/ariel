@@ -19,7 +19,7 @@ where
 
 import Ariel.Syntax.Types
 import Data.Coerce (coerce)
-import Data.Sequence (Seq(..), (<|))
+import Data.Sequence (Seq (..), (<|))
 import qualified Data.Sequence as Seq
 import Data.Text (Text)
 import Data.Vector (Vector)
