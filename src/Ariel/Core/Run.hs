@@ -1,16 +1,22 @@
+{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Ariel.Core.Run where
 
-import Ariel.Core.Compile
+import Ariel.Common.Types
 import Ariel.Core.Types
 import Ariel.Runtime.Eval (eval)
-import Ariel.Runtime.IO (run)
+import Ariel.Runtime.Compile
+import Ariel.Runtime.Purify
 
-runCore :: Defs -> Expr -> IO Expr
-runCore defs expr = decompileRT <$> run rtGlobals rtExpr
+evalCore :: Defs -> Expr -> String
+evalCore defs expr = show $ eval mGlobals mExpr
   where
-    (rtExpr, rtGlobals) = compileCore defs expr
+    (pExpr, pGlobals) = purify defs expr
+    mGlobals = fmap compile pGlobals
+    mExpr = compile pExpr
 
-evalCore :: Defs -> Expr -> IO Expr
-evalCore defs expr = decompileRT <$> eval rtGlobals rtExpr
-  where
-    (rtExpr, rtGlobals) = compileCore defs expr
+exampleDefs :: Defs
+exampleDefs = Defs
+    { globals = mempty
+    , sumTypes = [(QName "base" "bool", ["false", "true"])]
+    }

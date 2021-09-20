@@ -1,36 +1,29 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Ariel.Runtime.Types where
 
-import Ariel.Common.IOPrim
-import Ariel.Common.Prim
-import Ariel.Common.Types
 import Data.Text (Text)
-import Data.Vector (Vector)
 
-data Expr
-  = Int Int
-  | String Text
-  | Con Tag Int [Expr]
-  | Global Int
-  | Lam1 (Expr -> Expr)
-  | Lam2 (Expr -> Expr -> Expr)
-  | Lam3 (Expr -> Expr -> Expr -> Expr)
-  | Fix (Expr -> Expr)
-  | App1 Expr Expr
-  | App2 Expr Expr Expr
-  | App3 Expr Expr Expr Expr
-  | Case Expr (Vector Expr)
-  | Prim2 Prim2 Expr Expr
-  | IOPrim (IOPrim Expr)
-  | Bind Expr Expr
-  | Pure Expr
+data Value
+  = VInt Int
+  | VString Text
+  | VBool Bool
+  | VGlobal Int
+  | VFun (Value -> Value)
 
-unit :: Expr
-unit = Con "unit" 0 []
+instance Show Value where
+  show (VInt i) = "VInt " ++ show i
+  show (VString t) = "VString " ++ show t
+  show (VBool b) = "VBool " ++ show b
+  show (VGlobal i) = "VGlobal " ++ show i
+  show (VFun _) = "VFun <>"
 
-false :: Expr
-false = Con "false" 0 []
+data PExpr
+  = PConst Value
+  | PVar Text
+  | PAbs Text PExpr
+  | PApp PExpr PExpr
+  deriving (Show)
 
-true :: Expr
-true = Con "true" 1 []
+data MExpr
+  = MConst Value
+  | MApp MExpr MExpr
+  deriving (Show)

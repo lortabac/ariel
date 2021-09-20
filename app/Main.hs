@@ -3,4 +3,4 @@ module Main where
 import Examples
 
 main :: IO ()
-main = print =<< exampleFact
+main = putStrLn exampleSumr

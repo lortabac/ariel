@@ -2,7 +2,6 @@
 module Ariel.Core.Types where
     
 import Ariel.Common.IOPrim
-import Ariel.Common.Prim
 import Ariel.Common.Types
 import Data.Map.Strict (Map)
 import Data.Set (Set)
@@ -13,15 +12,16 @@ import Control.DeepSeq
 data Expr
   = Int Int
   | String Text
+  | Bool Bool
   | Con QName Tag [Expr]
   | Var Text
   | Global QName
-  | Lam [Text] Expr
+  | Lam Text Expr
   | Fix Text Expr
-  | App Expr [Expr]
+  | App Expr Expr
   | Case Expr (Map Tag Expr)
   | Let Text Expr Expr
-  | Prim2 Prim2 Expr Expr
+  | Prim Text
   | IOPrim (IOPrim Expr)
   | Bind Expr Expr
   | Pure Expr
@@ -30,13 +30,13 @@ data Expr
 instance NFData Expr
 
 -- | Convenience operator for lambdas
-(==>) :: [Text] -> Expr -> Expr
+(==>) :: Text -> Expr -> Expr
 (==>) = Lam
 
 infixr 1 ==>
 
 -- | Convenience operator for applications
-(@@) :: Expr -> [Expr] -> Expr
+(@@) :: Expr -> Expr -> Expr
 (@@) = App
 
 infixl 9 @@

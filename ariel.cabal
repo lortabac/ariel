@@ -20,15 +20,12 @@ library
   exposed-modules:     Ariel.Common.IOPrim
                      , Ariel.Common.Prim
                      , Ariel.Common.Types
-                     , Ariel.Core.Compile
                      , Ariel.Core.Run
                      , Ariel.Core.Types
-                     , Ariel.Language.Parse
-                     , Ariel.Language.Types
+                     , Ariel.Runtime.Compile
                      , Ariel.Runtime.Eval
-                     , Ariel.Runtime.IO
-                     , Ariel.Runtime.IOPrim
                      , Ariel.Runtime.Prim
+                     , Ariel.Runtime.Purify
                      , Ariel.Runtime.Types
   -- other-modules:
   -- other-extensions:
