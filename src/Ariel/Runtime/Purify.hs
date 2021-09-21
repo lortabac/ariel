@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Ariel.Runtime.Purify where
 
 import Ariel.Common.Types
@@ -8,6 +9,8 @@ import Data.Map.Strict (Map, (!))
 import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
@@ -28,9 +31,8 @@ purify' ::
   PExpr
 purify' _ _ (Int i) = PConst (VInt i)
 purify' _ _ (String s) = PConst (VString s)
-purify' _ _ (Bool b) = PConst (VBool b)
--- purify' ix defs (Con qn tag es) = con (getIndex qn tag (sumTypes defs)) (fmap (purify' ix defs) es)
--- purify' ix defs (Case e es) = makeCase (purify' ix defs e) $ PVec $ V.fromList $ Map.elems $ fmap (purify' ix defs) es
+purify' ix defs (Con qn tag es) = purify' ix defs $ churchCon (sumTypes defs) qn tag es
+purify' ix defs (Case e es) = purify' ix defs $ churchCase e es
 purify' _ _ (Var name) = PVar name
 purify' index _ (Global qn) = PConst (VGlobal (index ! qn))
 purify' ix defs (Lam name e) = PAbs name (purify' ix defs e)
@@ -47,3 +49,17 @@ globalIndex = Map.fromList . flip zip [0 ..] . Map.keys
 
 getIndex :: QName -> Tag -> Map QName (Set Tag) -> Int
 getIndex qn tag st = Set.findIndex tag (st ! qn)
+
+churchCon :: Map QName (Set Tag) -> QName -> Tag -> [Expr] -> Expr
+churchCon st qn (Tag name) es = foldr Lam (foldr stepVariants app variants) args
+  where
+    variants = st ! qn
+    stepVariants (Tag n) = Lam n
+    args = map (\n -> "x" <> tshow n) [1..length es]
+    app = foldl App (Var name) $ map Var args
+
+churchCase :: Expr -> Map Tag Expr -> Expr
+churchCase e eqs = foldl1 App (e : Map.elems eqs)
+
+tshow :: Show a => a -> Text
+tshow = T.pack . show

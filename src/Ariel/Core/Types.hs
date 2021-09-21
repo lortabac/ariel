@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Ariel.Core.Types where
-    
+
 import Ariel.Common.IOPrim
 import Ariel.Common.Types
 import Data.Map.Strict (Map)
@@ -12,7 +12,6 @@ import Control.DeepSeq
 data Expr
   = Int Int
   | String Text
-  | Bool Bool
   | Con QName Tag [Expr]
   | Var Text
   | Global QName
