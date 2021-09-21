@@ -3,10 +3,10 @@
 
 module Ariel.Common.Prim where
 
+import Control.DeepSeq
 import GHC.Generics
 import Language.SexpGrammar
 import Language.SexpGrammar.Generic
-import Control.DeepSeq
 
 data Prim2
   = IntPlus
