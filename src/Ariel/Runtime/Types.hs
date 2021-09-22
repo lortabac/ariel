@@ -1,4 +1,5 @@
 {-# LANGUAGE StrictData #-}
+
 module Ariel.Runtime.Types where
 
 import Data.Text (Text)

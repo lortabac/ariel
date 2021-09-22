@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Ariel.Runtime.Purify where
 
 import Ariel.Common.Types
@@ -56,7 +57,7 @@ churchCon st qn (Tag name) = foldr Lam (foldr stepVariants app (Map.keys variant
     variants = st ! qn
     conArity = variants ! Tag name
     stepVariants (Tag n) = Lam n
-    args = map (\n -> "x" <> tshow n) [1..conArity]
+    args = map (\n -> "x" <> tshow n) [1 .. conArity]
     app = foldl App (Var name) $ map Var args
 
 churchCase :: Expr -> Map Tag Expr -> Expr

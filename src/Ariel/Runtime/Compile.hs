@@ -14,7 +14,7 @@ elim (PAbs s (PVar s'))
   | otherwise = PApp combK (PVar s')
 elim (PAbs _ (PConst c)) = PApp combK (PConst c)
 elim (PAbs s (PApp e1 e2)) = preEvalApp $ PApp (PApp combS (elim (PAbs s e1))) (elim (PAbs s e2))
-elim (PAbs s t@PAbs{}) = elim (PAbs s (elim t))
+elim (PAbs s t@PAbs {}) = elim (PAbs s (elim t))
 
 preEvalApp :: PExpr -> PExpr
 preEvalApp (PApp e1 e2) = case (preEvalApp e1, preEvalApp e2) of
@@ -34,8 +34,9 @@ combK :: PExpr
 combK = PConst $ VFun (VFun . const)
 
 combS :: PExpr
-combS = PConst $ VFun $ \(VFun f) -> VFun $ \(VFun g) -> VFun $
-  \x ->
-    case f x of
-      VFun h -> h (g x)
-      _ -> error "Can't apply combS"
+combS = PConst $
+  VFun $ \(VFun f) -> VFun $ \(VFun g) -> VFun $
+    \x ->
+      case f x of
+        VFun h -> h (g x)
+        _ -> error "Can't apply combS"

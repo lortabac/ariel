@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Ariel.Runtime.Prim where
 
 import Ariel.Runtime.Types
@@ -13,13 +14,14 @@ lookupPrim name = case Map.lookup name primMap of
   Nothing -> error "Invalid prim"
 
 primMap :: Map Text PExpr
-primMap = Map.fromList
-  [ ("fix", recur)
-  , ("i=", intEq)
-  , ("i<", intLT)
-  , ("i+", intPlus)
-  , ("i-", intMinus)
-  ]
+primMap =
+  Map.fromList
+    [ ("fix", recur),
+      ("i=", intEq),
+      ("i<", intLT),
+      ("i+", intPlus),
+      ("i-", intMinus)
+    ]
 
 recur :: PExpr
 recur = PConst $ VFun $ \(VFun f) -> fix f
