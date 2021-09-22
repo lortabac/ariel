@@ -45,15 +45,18 @@ combS = PConst $
         _ -> error "Can't apply combS"
 
 combB :: PExpr
-combB = PConst $ VFun $ \(VFun a) -> VFun $ \(VFun g) -> VFun $ \x ->
-  a (g x)
+combB = PConst $
+  VFun $ \(VFun a) -> VFun $ \(VFun g) -> VFun $ \x ->
+    a (g x)
 
 combC :: PExpr
-combC = PConst $ VFun $ \(VFun f) -> VFun $ \b -> VFun $ \x ->
-  case f x of
-    VFun h -> h b
-    _ -> error "Can't apply combC"
+combC = PConst $
+  VFun $ \(VFun f) -> VFun $ \b -> VFun $ \x ->
+    case f x of
+      VFun h -> h b
+      _ -> error "Can't apply combC"
 
 combN :: PExpr
-combN = PConst $ VFun $ \(VFun a) -> VFun $ \b -> VFun $ \_ ->
-  a b
+combN = PConst $
+  VFun $ \(VFun a) -> VFun $ \b -> VFun $ \_ ->
+    a b
