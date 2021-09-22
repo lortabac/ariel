@@ -16,6 +16,7 @@ primMap :: Map Text PExpr
 primMap = Map.fromList
   [ ("fix", recur)
   , ("i=", intEq)
+  , ("i<", intLT)
   , ("i+", intPlus)
   , ("i-", intMinus)
   ]
@@ -24,7 +25,10 @@ recur :: PExpr
 recur = PConst $ VFun $ \(VFun f) -> fix f
 
 intEq :: PExpr
-intEq = PConst $ makeFun2 $ \(VInt x) (VInt y) -> if x == y then false else true
+intEq = PConst $ makeFun2 $ \(VInt x) (VInt y) -> if x == y then true else false
+
+intLT :: PExpr
+intLT = PConst $ makeFun2 $ \(VInt x) (VInt y) -> if x < y then true else false
 
 intPlus :: PExpr
 intPlus = PConst $ makeFun2 $ \(VInt x) (VInt y) -> VInt (x + y)

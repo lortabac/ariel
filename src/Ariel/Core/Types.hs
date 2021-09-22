@@ -6,14 +6,13 @@ import Ariel.Common.IOPrim
 import Ariel.Common.Types
 import Control.DeepSeq
 import Data.Map.Strict (Map)
-import Data.Set (Set)
 import Data.Text (Text)
 import GHC.Generics
 
 data Expr
   = Int Int
   | String Text
-  | Con QName Tag [Expr]
+  | Con QName Tag
   | Var Text
   | Global QName
   | Lam Text Expr
@@ -43,7 +42,7 @@ infixl 9 @@
 
 data Defs = Defs
   { globals :: Map QName Expr,
-    sumTypes :: Map QName (Set Tag)
+    sumTypes :: Map QName (Map Tag Int)
   }
   deriving (Eq, Show)
 
