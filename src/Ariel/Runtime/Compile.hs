@@ -13,6 +13,9 @@ elim (PAbs s (PVar s'))
   | s == s' = combI
   | otherwise = PApp combK (PVar s')
 elim (PAbs _ (PConst c)) = PApp combK (PConst c)
+elim (PAbs _ (PApp (PConst c1) (PConst c2))) = PApp (PApp combN (PConst c1)) (PConst c2)
+elim (PAbs s (PApp (PConst c) e2)) = PApp (PApp combB (PConst c)) (elim $ PAbs s e2)
+elim (PAbs s (PApp e1 (PConst c))) = PApp (PApp combC (elim $ PAbs s e1)) (PConst c)
 elim (PAbs s (PApp e1 e2)) = preEvalApp $ PApp (PApp combS (elim (PAbs s e1))) (elim (PAbs s e2))
 elim (PAbs s t@PAbs {}) = elim (PAbs s (elim t))
 
@@ -40,3 +43,17 @@ combS = PConst $
       case f x of
         VFun h -> h (g x)
         _ -> error "Can't apply combS"
+
+combB :: PExpr
+combB = PConst $ VFun $ \(VFun a) -> VFun $ \(VFun g) -> VFun $ \x ->
+  a (g x)
+
+combC :: PExpr
+combC = PConst $ VFun $ \(VFun f) -> VFun $ \b -> VFun $ \x ->
+  case f x of
+    VFun h -> h b
+    _ -> error "Can't apply combC"
+
+combN :: PExpr
+combN = PConst $ VFun $ \(VFun a) -> VFun $ \b -> VFun $ \_ ->
+  a b
