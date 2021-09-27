@@ -42,3 +42,16 @@ exampleFib = runCore defs (fib @@ Int 40)
                    ("false", Prim "i+" @@ (Var "fib" @@ (Prim "i-" @@ Var "n" @@ Int 1)) @@ (Var "fib" @@ (Prim "i-" @@ Var "n" @@ Int 2)))
                  ]
            )
+
+exampleFibw :: IO String
+exampleFibw = runCore defs (fib @@ Int 35)
+  where
+    fib =
+        ("x" ==> Var "x" @@ Var "x")
+        @@ ( "fib" ==> "n"
+               ==> Case
+                 (Prim "i<" @@ Var "n" @@ Int 2)
+                 [ ("true", Int 1),
+                   ("false", Prim "i+" @@ (Var "fib" @@ Var "fib" @@ (Prim "i-" @@ Var "n" @@ Int 1)) @@ (Var "fib" @@ Var "fib" @@ (Prim "i-" @@ Var "n" @@ Int 2)))
+                 ]
+           )
