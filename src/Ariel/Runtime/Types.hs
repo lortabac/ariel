@@ -1,4 +1,5 @@
 {-# LANGUAGE StrictData #-}
+
 module Ariel.Runtime.Types where
 
 import Data.Text (Text)
@@ -28,5 +29,3 @@ data MExpr
   = MConst Value
   | MApp MExpr MExpr
   deriving (Show)
-
-

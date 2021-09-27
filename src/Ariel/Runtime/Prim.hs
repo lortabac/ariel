@@ -33,11 +33,13 @@ recur :: PExpr
 recur = PConst $ VFun $ \(VFun f) -> fix f
 
 bindIO :: PExpr
-bindIO = PConst $ makeFun2 $ \(VAction (IO m)) (VFun k) -> VAction $ IO $ \s ->
-  case m s of
-    (# s', a #) -> case k a of
-      VAction r -> unIO r s'
-      _ -> error "Invalid bind"
+bindIO = PConst $
+  makeFun2 $ \(VAction (IO m)) (VFun k) -> VAction $
+    IO $ \s ->
+      case m s of
+        (# s', a #) -> case k a of
+          VAction r -> unIO r s'
+          _ -> error "Invalid bind"
 
 writeLine :: PExpr
 writeLine = PConst $ VFun $ \(VString s) -> VAction (T.putStrLn s >> pure unit)
