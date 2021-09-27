@@ -17,8 +17,8 @@ defs =
         ]
     }
 
-exampleSumr :: String
-exampleSumr = evalCore defs (sumr @@ Int 10000000)
+exampleSumr :: IO String
+exampleSumr = runCore defs (sumr @@ Int 10000000)
   where
     sumr =
       Prim "fix"
@@ -30,8 +30,8 @@ exampleSumr = evalCore defs (sumr @@ Int 10000000)
                  ]
            )
 
-exampleFib :: String
-exampleFib = evalCore defs (fib @@ Int 40)
+exampleFib :: IO String
+exampleFib = runCore defs (fib @@ Int 40)
   where
     fib =
       Prim "fix"

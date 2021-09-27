@@ -6,8 +6,15 @@ module Ariel.Core.Run where
 import Ariel.Common.Types
 import Ariel.Core.Types
 import Ariel.Runtime.Compile
-import Ariel.Runtime.Eval (eval)
+import Ariel.Runtime.Eval (eval, run)
 import Ariel.Runtime.Purify
+
+runCore :: Defs -> Expr -> IO String
+runCore defs expr = show <$> run mGlobals mExpr
+  where
+    (pExpr, pGlobals) = purify defs expr
+    mGlobals = fmap compile pGlobals
+    mExpr = compile pExpr
 
 evalCore :: Defs -> Expr -> String
 evalCore defs expr = show $ eval mGlobals mExpr

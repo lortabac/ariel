@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE UnboxedTuples #-}
 
 module Ariel.Runtime.Prim where
 
@@ -7,6 +8,8 @@ import Data.Function (fix)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text (Text)
+import qualified Data.Text.IO as T
+import GHC.Base (IO (..), unIO)
 
 lookupPrim :: Text -> PExpr
 lookupPrim name = case Map.lookup name primMap of
@@ -17,6 +20,9 @@ primMap :: Map Text PExpr
 primMap =
   Map.fromList
     [ ("fix", recur),
+      ("bind", bindIO),
+      ("write-line", writeLine),
+      ("read-line", readLine),
       ("i=", intEq),
       ("i<", intLT),
       ("i+", intPlus),
@@ -25,6 +31,19 @@ primMap =
 
 recur :: PExpr
 recur = PConst $ VFun $ \(VFun f) -> fix f
+
+bindIO :: PExpr
+bindIO = PConst $ makeFun2 $ \(VAction (IO m)) (VFun k) -> VAction $ IO $ \s ->
+  case m s of
+    (# s', a #) -> case k a of
+      VAction r -> unIO r s'
+      _ -> error "Invalid bind"
+
+writeLine :: PExpr
+writeLine = PConst $ VFun $ \(VString s) -> VAction (T.putStrLn s >> pure unit)
+
+readLine :: PExpr
+readLine = PConst $ VAction (VString <$> T.getLine)
 
 intEq :: PExpr
 intEq = PConst $ makeFun2 $ \(VInt x) (VInt y) -> if x == y then true else false
@@ -49,6 +68,9 @@ makeFun2 f = VFun (VFun . f)
 
 makeFun3 :: (Value -> Value -> Value -> Value) -> Value
 makeFun3 f = VFun (\x -> VFun (VFun . f x))
+
+unit :: Value
+unit = VFun id
 
 false :: Value
 false = makeFun2 const
