@@ -3,4 +3,4 @@ module Main where
 import Examples
 
 main :: IO ()
-main = putStrLn =<< exampleFibw
+main = print =<< exampleFibw

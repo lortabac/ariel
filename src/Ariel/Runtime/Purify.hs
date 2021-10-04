@@ -40,7 +40,6 @@ purify' ix defs (Lam name e) = PAbs name (purify' ix defs e)
 purify' ix defs (App e arg) = PApp (purify' ix defs e) (purify' ix defs arg)
 purify' ix defs (Let name body e) = purify' ix defs (App (Lam name e) body)
 purify' _ _ (Prim p) = lookupPrim p
-purify' _ _ e = error ("Not supported yet: " ++ show e)
 
 compileGlobals :: Map QName Int -> Defs -> Vector PExpr
 compileGlobals index defs = fmap (purify' index defs) $ V.fromList $ Map.elems (globals defs)
@@ -51,11 +50,11 @@ globalIndex = Map.fromList . flip zip [0 ..] . Map.keys
 getIndex :: QName -> Tag -> Map QName (Set Tag) -> Int
 getIndex qn tag st = Set.findIndex tag (st ! qn)
 
-churchCon :: Map QName (Map Tag Int) -> QName -> Tag -> Expr
+churchCon :: Map QName (Map Tag [Ty]) -> QName -> Tag -> Expr
 churchCon st qn (Tag name) = foldr Lam (foldr stepVariants app (Map.keys variants)) args
   where
     variants = st ! qn
-    conArity = variants ! Tag name
+    conArity = length (variants ! Tag name)
     stepVariants (Tag n) = Lam n
     args = map (\n -> "x" <> tshow n) [1 .. conArity]
     app = foldl App (Var name) $ map Var args

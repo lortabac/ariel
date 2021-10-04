@@ -4,7 +4,7 @@
 module Examples where
 
 import Ariel.Common.Types
-import Ariel.Core.Run
+import Ariel.Core.Eval
 import Ariel.Core.Types
 
 defs :: Defs
@@ -12,12 +12,11 @@ defs =
   Defs
     { globals = mempty,
       sumTypes =
-        [ (QName "base" "bool", [("false", 0), ("true", 0)]),
-          (QName "base" "maybe", [("nothing", 0), ("just", 1)])
+        [ (QName "base" "bool", [("false", []), ("true", [])]),
         ]
     }
 
-exampleSumr :: IO String
+exampleSumr :: IO Expr
 exampleSumr = runCore defs (sumr @@ Int 10000000)
   where
     sumr =
@@ -30,7 +29,7 @@ exampleSumr = runCore defs (sumr @@ Int 10000000)
                  ]
            )
 
-exampleFib :: IO String
+exampleFib :: IO Expr
 exampleFib = runCore defs (fib @@ Int 40)
   where
     fib =
@@ -43,7 +42,7 @@ exampleFib = runCore defs (fib @@ Int 40)
                  ]
            )
 
-exampleFibw :: IO String
+exampleFibw :: IO Expr
 exampleFibw = runCore defs (fib @@ Int 35)
   where
     fib =

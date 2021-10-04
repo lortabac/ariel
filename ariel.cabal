@@ -17,11 +17,11 @@ build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
 library
-  exposed-modules:     Ariel.Common.IOPrim
-                     , Ariel.Common.Prim
-                     , Ariel.Common.Types
-                     , Ariel.Core.Run
+  exposed-modules:     Ariel.Common.Types
+                     , Ariel.Core.Eval
                      , Ariel.Core.Types
+                     , Ariel.Language.Desugar
+                     , Ariel.Language.Types
                      , Ariel.Runtime.Compile
                      , Ariel.Runtime.Eval
                      , Ariel.Runtime.Prim
@@ -32,9 +32,11 @@ library
   build-depends:       base >=4.12 && <5
                      , containers
                      , deepseq
-                     , ghc-prim
+                     , generic-lens
+                     , lens
                      , sexp-grammar
                      , text
+                     , unification-fd >=0.13
                      , vector
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -55,7 +57,6 @@ test-suite ariel-tests
   main-is:             Tests.hs
   hs-source-dirs:      tests
   other-modules:       Ariel.Tests.Eval
-                     , Ariel.Tests.Parse
   build-depends:       base >=4.12 && <5
                      , ariel
                      , tasty
