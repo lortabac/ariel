@@ -17,25 +17,46 @@ build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
 library
-  exposed-modules:     Ariel.Evaluation.Eval
-                     , Ariel.Evaluation.IO
-                     , Ariel.Evaluation.IOPrim
-                     , Ariel.Evaluation.Nameless
-                     , Ariel.Evaluation.Prim
-                     , Ariel.Evaluation.Types
-                     , Ariel.Syntax.AST
-                     , Ariel.Syntax.Parse
-                     , Ariel.Syntax.Transform
+  exposed-modules:     Ariel.Common.IOPrim
+                     , Ariel.Common.Prim
+                     , Ariel.Common.Types
+                     , Ariel.Core.Compile
+                     , Ariel.Core.Eval
+                     , Ariel.Core.Types
+                     , Ariel.Runtime.Env
+                     , Ariel.Runtime.Eval
+                     , Ariel.Runtime.IOPrim
+                     , Ariel.Runtime.Nameless
+                     , Ariel.Runtime.Prim
+                     , Ariel.Runtime.Types
+                     , Ariel.Syntax.Desugar
+                     , Ariel.Syntax.Errors
+                     , Ariel.Syntax.Eval
+                     , Ariel.Syntax.ReadBack
+                     , Ariel.Syntax.Sweeten
                      , Ariel.Syntax.Types
-                     , Ariel
-  -- other-modules:
+                     , Ariel.TC.Check
+                     , Ariel.TC.Constraints
+                     , Ariel.TC.Context
+                     , Ariel.TC.Generalize
+                     , Ariel.TC.Instantiate
+                     , Ariel.TC.Prim
+                     , Ariel.TC.Types
+  other-modules:       Ariel.Prelude
   -- other-extensions:
   build-depends:       base >=4.12 && <5
                      , bytestring
                      , containers
-                     , megaparsec
+                     , deepseq
+                     , ghc-prim
+                     , lens
                      , mtl
+                     , neat-interpolation
+                     , selective
+                     , sexp-grammar
                      , text
+                     , unify
+                     , validation-selective
                      , vector
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -44,24 +65,12 @@ library
 executable ariel
   main-is:             Main.hs
   other-modules:       Examples
-                     , Ariel
-                     , Ariel.Evaluation.Eval
-                     , Ariel.Evaluation.IO
-                     , Ariel.Evaluation.IOPrim
-                     , Ariel.Evaluation.Nameless
-                     , Ariel.Evaluation.Prim
-                     , Ariel.Evaluation.Types
-                     , Ariel.Syntax.AST
-                     , Ariel.Syntax.Transform
-                     , Ariel.Syntax.Types
   -- other-extensions:
   build-depends:       base >=4.12 && <5
+                     , ariel
                      , bytestring
-                     , containers
-                     , mtl
-                     , text
-                     , vector
-  hs-source-dirs:      src
+                     , haskeline
+  hs-source-dirs:      app
   default-language:    Haskell2010
   ghc-options:         -Wall -O2
 
@@ -70,7 +79,6 @@ test-suite ariel-tests
   main-is:             Tests.hs
   hs-source-dirs:      tests
   other-modules:       Ariel.Tests.Eval
-                     , Ariel.Tests.Parse
   build-depends:       base >=4.12 && <5
                      , ariel
                      , tasty
@@ -79,3 +87,14 @@ test-suite ariel-tests
                      , vector
   default-language:    Haskell2010
   ghc-options:         -Wall
+
+-- benchmark ariel-bench
+--   type:                exitcode-stdio-1.0
+--   main-is:             Bench.hs
+--   other-modules:       Examples
+--   hs-source-dirs:      bench
+--   build-depends:       base >=4.12 && <5
+--                      , ariel
+--                      , criterion
+--   default-language:    Haskell2010
+--   ghc-options:         -Wall -O2
