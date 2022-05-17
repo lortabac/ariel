@@ -18,20 +18,21 @@ import Data.Foldable (asum, toList)
 import Data.Maybe (mapMaybe)
 import GHC.Exts (isTrue#)
 import GHC.Types (Int (..))
+import Language.Sexp.Located (dummyPos)
 
 readBackV :: Value -> Expr
 readBackV (VInt i) = Int (I# i)
 readBackV (VString s) = String s
 readBackV (VBool i) = if isTrue# i then T else F
-readBackV (VClos env name e) = readBackEnv 1 env e $ Lam [name] (readBackI e)
-readBackV (VDummyClos env name e) = readBackEnv 0 env e $ Lam [name] (readBackI e)
+readBackV (VClos env name e) = readBackEnv 1 env e $ Lam dummyPos [name] (readBackI e)
+readBackV (VDummyClos env name e) = readBackEnv 0 env e $ Lam dummyPos [name] (readBackI e)
 readBackV (VIOPrim p) = readBackVIOPrim p
 readBackV (VBindIO e1 e2) = BindIO (readBackV e1) (readBackV e2)
 
 readBackEnv :: Int -> Env Value -> IExpr -> Expr -> Expr
 readBackEnv i env e1 e2 = case restoreEnv i env e1 of
   [] -> e2
-  decls -> Let decls e2
+  decls -> Let dummyPos decls e2
 
 restoreEnv :: Int -> Env Value -> IExpr -> [LetDecl]
 restoreEnv i env = map (letDeclFromPair . fmap readBackV) . restoreNames i env
@@ -69,31 +70,31 @@ findNameI i (IFix e) = findNameI i e
 readBackI :: IExpr -> Expr
 readBackI (IConst v) = readBackV v
 readBackI (IGlobal _) = error "Unimplemented"
-readBackI (IVar name _) = Var name
-readBackI (IAbs name e) = Lam [name] $ readBackI e
-readBackI (IDummyAbs name e) = Lam [name] $ readBackI e
-readBackI (IApp e1 e2) = App [readBackI e1, readBackI e2]
+readBackI (IVar name _) = Var dummyPos name
+readBackI (IAbs name e) = Lam dummyPos [name] $ readBackI e
+readBackI (IDummyAbs name e) = Lam dummyPos [name] $ readBackI e
+readBackI (IApp e1 e2) = App dummyPos [readBackI e1, readBackI e2]
 readBackI (IPrim p) = readBackPrim p
 readBackI (IIOPrim p) = readBackIOPrim p
-readBackI (IIf c t f) = If (readBackI c) (readBackI t) (readBackI f)
+readBackI (IIf c t f) = If dummyPos (readBackI c) (readBackI t) (readBackI f)
 readBackI (IBindIO e1 e2) = BindIO (readBackI e1) (readBackI e2)
 readBackI (IFix e) = Fix (readBackI e)
 
 readBackPrim :: Prim IExpr -> Expr
-readBackPrim (Eq e1 e2) = Prim "=" [readBackI e1, readBackI e2]
-readBackPrim (Plus e1 e2) = Prim "+" [readBackI e1, readBackI e2]
-readBackPrim (Minus e1 e2) = Prim "-" [readBackI e1, readBackI e2]
-readBackPrim (Lt e1 e2) = Prim "<" [readBackI e1, readBackI e2]
+readBackPrim (Eq e1 e2) = Prim dummyPos "=" [readBackI e1, readBackI e2]
+readBackPrim (Plus e1 e2) = Prim dummyPos "+" [readBackI e1, readBackI e2]
+readBackPrim (Minus e1 e2) = Prim dummyPos "-" [readBackI e1, readBackI e2]
+readBackPrim (Lt e1 e2) = Prim dummyPos "<" [readBackI e1, readBackI e2]
 
 readBackIOPrim :: IOPrim IExpr -> Expr
-readBackIOPrim (Pure e) = IOPrim "pure" [readBackI e]
-readBackIOPrim ReadLine = IOPrim "read-line" []
-readBackIOPrim (Display e) = IOPrim "display" [readBackI e]
+readBackIOPrim (Pure e) = IOPrim dummyPos "pure" [readBackI e]
+readBackIOPrim ReadLine = IOPrim dummyPos "read-line" []
+readBackIOPrim (Display e) = IOPrim dummyPos "display" [readBackI e]
 
 readBackVIOPrim :: IOPrim Value -> Expr
-readBackVIOPrim (Pure e) = IOPrim "pure" [readBackV e]
-readBackVIOPrim ReadLine = IOPrim "read-line" []
-readBackVIOPrim (Display e) = IOPrim "display" [readBackV e]
+readBackVIOPrim (Pure e) = IOPrim dummyPos "pure" [readBackV e]
+readBackVIOPrim ReadLine = IOPrim dummyPos "read-line" []
+readBackVIOPrim (Display e) = IOPrim dummyPos "display" [readBackV e]
 
 readBackTy :: Core.Ty -> Ty
 readBackTy (Core.TCon name) = TSym name

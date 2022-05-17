@@ -39,9 +39,9 @@ data IExpr
   deriving (Eq, Show)
 
 data Value
-  = VInt {-# UNPACK #-} Int#
+  = VInt Int#
   | VString {-# UNPACK #-} Text
-  | VBool {-# UNPACK #-} Int#
+  | VBool Int#
   | VClos ~(Env Value) ~Name IExpr
   | VDummyClos ~(Env Value) ~Name IExpr
   | VIOPrim (IOPrim Value)

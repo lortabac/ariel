@@ -11,6 +11,7 @@ import Ariel.Prelude
 import Ariel.TC.Constraints
 import Ariel.TC.Context
 import qualified Data.Set as Set
+import Language.SexpGrammar (Position)
 import Logic.Unify
 import Validation
 
@@ -32,6 +33,12 @@ instance MonadUnify Ty InferM where
 
 runInferM :: InferM a -> (a, TyConstrs)
 runInferM (InferM m) = runState (runReaderT (evalUnifyT m) emptyCtx) mempty
+
+data TCMessage = TCMessage
+  { position :: Position,
+    tcError :: TCError
+  }
+  deriving (Eq, Show, Ord)
 
 data TCError
   = TypeMismatch Ty Ty
@@ -55,5 +62,5 @@ newMetavar = Metavar <$> newVar (Proxy :: Proxy Ty)
 newBoundMetavar :: Ty -> InferM Ty
 newBoundMetavar t = Metavar <$> newBoundVar t
 
-addEqConstr :: Ty -> Ty -> InferM ()
-addEqConstr u1 u2 = InferM $ modify (\(Constraints cs) -> Constraints ((u1, u2) : cs))
+addEqConstr :: Position -> Ty -> Ty -> InferM ()
+addEqConstr p u1 u2 = InferM $ modify (\(Constraints cs) -> Constraints (EqConstr p u1 u2 : cs))

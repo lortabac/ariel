@@ -8,8 +8,12 @@ import Ariel.Core.Types
 import Ariel.Prelude
 import Ariel.Syntax.ReadBack
 import Ariel.TC.Types
+import Language.Sexp.Located (Position (..))
 import Language.SexpGrammar (encode)
 import NeatInterpolation
+
+showTCMessage :: TCMessage -> (Position, Text)
+showTCMessage (TCMessage p err) = (p, showTCError err)
 
 showTCError :: TCError -> Text
 showTCError (TypeMismatch t1 t2) =

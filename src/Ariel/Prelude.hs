@@ -1,5 +1,6 @@
 module Ariel.Prelude
-  ( lbsToText,
+  ( tshow,
+    lbsToText,
     module Control.Monad.Reader,
     module Control.Monad.State,
     module Data.Data,
@@ -21,9 +22,13 @@ import Data.Map (Map)
 import Data.Proxy (Proxy (..))
 import Data.Set (Set)
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Data.Traversable (for)
+
+tshow :: Show a => a -> Text
+tshow = T.pack . show
 
 lbsToText :: LBS.ByteString -> Text
 lbsToText = LT.toStrict . decodeUtf8

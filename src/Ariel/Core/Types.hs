@@ -13,6 +13,7 @@ import Ariel.Prelude
 import Control.DeepSeq
 import Control.Lens (Plated, children, transformM)
 import GHC.Generics
+import Language.Sexp.Located (Position, dummyPos)
 import Logic.Unify
 
 data Decl
@@ -56,29 +57,33 @@ data Expr
   | Bool Bool
   | Con QName Tag
   | Global QName
-  | Lam Name Expr
-  | Let Name Expr Expr
-  | Prim Text [Expr]
-  | IOPrim Text [Expr]
+  | Lam Position Name Expr
+  | Let Position Name Expr Expr
+  | Prim Position Text [Expr]
+  | IOPrim Position Text [Expr]
   | Case Expr (Map Tag Expr)
-  | Var Name
-  | App Expr Expr
-  | If Expr Expr Expr
+  | Var Position Name
+  | App Position Expr Expr
+  | If Position Expr Expr Expr
   | BindIO Expr Expr
   | Fix Expr
   deriving (Eq, Show, Generic)
 
 instance NFData Expr
 
+-- | Convenience constructor for vars
+var :: Name -> Expr
+var = Var dummyPos
+
 -- | Convenience operator for lambdas
 (==>) :: Name -> Expr -> Expr
-(==>) = Lam
+(==>) = Lam dummyPos
 
 infixr 1 ==>
 
 -- | Convenience operator for applications
 (@@) :: Expr -> Expr -> Expr
-(@@) = App
+(@@) = App dummyPos
 
 infixl 9 @@
 

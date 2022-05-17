@@ -14,13 +14,14 @@ import Data.Maybe (mapMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
+import Language.SexpGrammar (Position)
 
 desugarDefs :: Defs -> Core.Defs
 desugarDefs _ = mempty
 
 desugarDecl :: Map Text (Set Name) -> Decl -> Core.Decl
-desugarDecl ns (Decl (Name name) e) = Core.Decl name (desugarExpr ns e)
-desugarDecl ns (DeclLam (Name name :| args) e) = Core.Decl name (desugarExpr ns (Lam args e))
+desugarDecl ns (Decl _ (Name name) e) = Core.Decl name (desugarExpr ns e)
+desugarDecl ns (DeclLam p (Name name :| args) e) = Core.Decl name (desugarExpr ns (Lam p args e))
 
 desugarExpr :: Map Text (Set Name) -> Expr -> Core.Expr
 desugarExpr _ (Int i) = Core.Int i
@@ -28,21 +29,21 @@ desugarExpr _ (String s) = Core.String s
 desugarExpr _ F = Core.Bool False
 desugarExpr _ T = Core.Bool True
 desugarExpr _ (Con _) = error "Unimplemented"
-desugarExpr ns (Lam args e) = foldr Core.Lam (desugarExpr ns e) args
-desugarExpr ns (Let decls e) =
+desugarExpr ns (Lam p args e) = foldr (Core.Lam p) (desugarExpr ns e) args
+desugarExpr ns (Let p decls e) =
   foldr
-    (\(LetDecl name e1) -> Core.Let name (desugarExpr ns e1))
+    (\(LetDecl name e1) -> Core.Let p name (desugarExpr ns e1))
     (desugarExpr ns e)
     decls
-desugarExpr ns (Prim name args) = Core.Prim name (map (desugarExpr ns) args)
-desugarExpr ns (IOPrim name args) = Core.IOPrim name (map (desugarExpr ns) args)
+desugarExpr ns (Prim p name args) = Core.Prim p name (map (desugarExpr ns) args)
+desugarExpr ns (IOPrim p name args) = Core.IOPrim p name (map (desugarExpr ns) args)
 desugarExpr _ (Case _ _) = error "Unimplemented"
-desugarExpr ns (If c t f) = Core.If (desugarExpr ns c) (desugarExpr ns t) (desugarExpr ns f)
-desugarExpr ns (NamedLam name args e) = Core.Fix $ desugarExpr ns (Lam (name : args) e)
+desugarExpr ns (If p c t f) = Core.If p (desugarExpr ns c) (desugarExpr ns t) (desugarExpr ns f)
+desugarExpr ns (NamedLam p name args e) = Core.Fix $ desugarExpr ns (Lam p (name : args) e)
 desugarExpr ns (BindIO e1 e2) = Core.BindIO (desugarExpr ns e1) (desugarExpr ns e2)
 desugarExpr ns (Fix e) = Core.Fix (desugarExpr ns e)
-desugarExpr ns (Var name) = resolveName name ns
-desugarExpr ns (App (e :| es)) = foldl' Core.App (desugarExpr ns e) (desugarExpr ns <$> es)
+desugarExpr ns (Var p name) = resolveName p name ns
+desugarExpr ns (App p (e :| es)) = foldl' (Core.App p) (desugarExpr ns e) (desugarExpr ns <$> es)
 
 desugarTy :: Ty -> Core.Ty
 desugarTy = desugarTy' []
@@ -56,9 +57,9 @@ desugarTy' vars (TApp (t :| ts)) = foldl' Core.TApp (desugarTy' vars t) (fmap (d
 desugarTy' vars (Forall vs t) = Core.Forall vs (desugarTy' (map unTyVar vs ++ vars) t)
 desugarTy' vars (TArr ts) = desugarTy' vars $ TApp $ TSym "->" :| ts
 
-resolveName :: Name -> Map Text (Set Name) -> Core.Expr
-resolveName name ns = case matches of
-  [] -> Core.Var name
+resolveName :: Position -> Name -> Map Text (Set Name) -> Core.Expr
+resolveName p name ns = case matches of
+  [] -> Core.Var p name
   [moduleName] -> Core.Global (QName moduleName name)
   _ -> error ("Ambiguous name: " ++ show name)
   where

@@ -15,7 +15,8 @@ import Ariel.TC.Types
 import Data.Bifunctor
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.Text as T
-import Language.SexpGrammar (decode, encodePretty)
+import Language.Sexp.Located (dummyPos)
+import Language.SexpGrammar (Position, decode, encodePretty)
 
 runArielStr :: Defs -> ByteString -> IO ByteString
 runArielStr defs expr = encodeOrDie <$> runAriel defs (decodeOrDie expr)
@@ -55,13 +56,13 @@ evalAriel defs expr = sweetenExpr . readBackV $ eval iGlobals mempty iExpr
     iGlobals = fmap removeNames pGlobals
     iExpr = removeNames pExpr
 
-typecheckArielStr :: Map Text (Set Name) -> ByteString -> Either [Text] ByteString
+typecheckArielStr :: Map Text (Set Name) -> ByteString -> Either [(Position, Text)] ByteString
 typecheckArielStr ns expr = tc
   where
     tc = do
-      ast <- first (pure . T.pack) $ decode expr
-      ty <- first (map showTCError . toList) $ typecheckAriel ns ast
-      first (pure . T.pack) $ encodePretty ty
+      ast <- first (\err -> [(dummyPos, T.pack err)]) $ decode expr
+      ty <- first (map showTCMessage . toList) $ typecheckAriel ns ast
+      first (\err -> [(dummyPos, T.pack err)]) $ encodePretty ty
 
-typecheckAriel :: Map Text (Set Name) -> Expr -> Either (Set TCError) Ty
+typecheckAriel :: Map Text (Set Name) -> Expr -> Either (Set TCMessage) Ty
 typecheckAriel ns expr = sweetenTy . readBackTy <$> typecheck (desugarExpr ns expr)

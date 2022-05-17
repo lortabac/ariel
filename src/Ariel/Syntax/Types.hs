@@ -20,16 +20,16 @@ instance SexpIso ImportDecl where
     \iDecl -> list (el (sym "import") >>> el sexpIso) >>> iDecl
 
 data Decl
-  = Decl Name Expr
-  | DeclLam (NonEmpty Name) Expr
+  = Decl Position Name Expr
+  | DeclLam Position (NonEmpty Name) Expr
   deriving (Eq, Show, Generic)
 
 instance SexpIso Decl where
   sexpIso =
     match $
-      With (list (el (sym "define") >>> el sexpIso >>> el sexpIso) >>>) $
+      With (\d -> position >>> swap >>> list (el (sym "define") >>> el sexpIso >>> el sexpIso) >>> d) $
         With
-          (list (el (sym "define") >>> el sexpIso >>> el sexpIso) >>>)
+          (\d -> position >>> swap >>> list (el (sym "define") >>> el sexpIso >>> el sexpIso) >>> d)
           End
 
 data Expr
@@ -38,17 +38,17 @@ data Expr
   | F
   | T
   | Con Tag
-  | Lam [Name] Expr
-  | Let [LetDecl] Expr
-  | Prim Text [Expr]
-  | IOPrim Text [Expr]
+  | Lam Position [Name] Expr
+  | Let Position [LetDecl] Expr
+  | Prim Position Text [Expr]
+  | IOPrim Position Text [Expr]
   | Case Expr [CaseEquation]
-  | If Expr Expr Expr
+  | If Position Expr Expr Expr
   | Fix Expr
-  | NamedLam Name [Name] Expr
+  | NamedLam Position Name [Name] Expr
   | BindIO Expr Expr
-  | Var Name
-  | App (NonEmpty Expr)
+  | Var Position Name
+  | App Position (NonEmpty Expr)
   deriving (Eq, Show, Generic)
 
 instance SexpIso Expr where
@@ -59,18 +59,18 @@ instance SexpIso Expr where
           With (hashed (sym "f") >>>) $
             With (hashed (sym "t") >>>) $
               With (sexpIso >>>) $
-                With (list (el (sym "lambda") >>> el sexpIso >>> el sexpIso) >>>) $
-                  With (list (el (sym "let") >>> el (list (rest sexpIso)) >>> el sexpIso) >>>) $
-                    With (list (el (sym "prim") >>> el symbol >>> rest sexpIso) >>>) $
-                      With (list (el (sym "io-prim") >>> el symbol >>> rest sexpIso) >>>) $
+                With (\l -> position >>> swap >>> list (el (sym "lambda") >>> el sexpIso >>> el sexpIso) >>> l) $
+                  With (\l -> position >>> swap >>> list (el (sym "let") >>> el (list (rest sexpIso)) >>> el sexpIso) >>> l) $
+                    With (\p -> position >>> swap >>> list (el (sym "prim") >>> el symbol >>> rest sexpIso) >>> p) $
+                      With (\p -> position >>> swap >>> list (el (sym "io-prim") >>> el symbol >>> rest sexpIso) >>> p) $
                         With (list (el (sym "match") >>> el sexpIso >>> el (list (rest sexpIso))) >>>) $
-                          With (list (el (sym "if") >>> el sexpIso >>> el sexpIso >>> el sexpIso) >>>) $
+                          With (\i -> position >>> swap >>> list (el (sym "if") >>> el sexpIso >>> el sexpIso >>> el sexpIso) >>> i) $
                             With (list (el (sym "fix") >>> el sexpIso) >>>) $
-                              With (list (el (sym "named-lambda") >>> el sexpIso >>> el sexpIso >>> el sexpIso) >>>) $
+                              With (\n -> position >>> swap >>> list (el (sym "named-lambda") >>> el sexpIso >>> el sexpIso >>> el sexpIso) >>> n) $
                                 With (list (el (sym "bind-io") >>> el sexpIso >>> el sexpIso) >>>) $
-                                  With (sexpIso >>>) $
+                                  With (\v -> position >>> swap >>> sexpIso >>> v) $
                                     With
-                                      (sexpIso >>>)
+                                      (\app -> position >>> swap >>> sexpIso >>> app)
                                       End
 
 data LetDecl = LetDecl Name Expr

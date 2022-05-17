@@ -2,7 +2,9 @@
 
 module Ariel.TC.Constraints where
 
-data Constraints a = Constraints {eqConstrs :: [(a, a)]}
+import Language.SexpGrammar (Position)
+
+data Constraints a = Constraints {eqConstrs :: [EqConstr a]}
   deriving (Eq, Show)
 
 instance Semigroup (Constraints a) where
@@ -10,3 +12,6 @@ instance Semigroup (Constraints a) where
 
 instance Monoid (Constraints a) where
   mempty = Constraints mempty
+
+data EqConstr a = EqConstr Position a a
+  deriving (Eq, Show)

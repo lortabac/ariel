@@ -5,16 +5,17 @@ import Ariel.Core.Types
 import Ariel.Prelude
 import Ariel.TC.Types
 import qualified Data.Map as Map
+import Language.Sexp.Located (dummyPos)
 import Validation
 
-instantiate :: Ty -> InferM (Validation (Set TCError) Ty)
+instantiate :: Ty -> InferM (Validation (Set TCMessage) Ty)
 instantiate (Forall vars t) = do
   metavars <- traverse (const newMetavar) vars
   let metaMap = Map.fromList $ zip vars metavars
   instantiate' metaMap t
 instantiate t = ok t
 
-instantiate' :: Map TyVar Ty -> Ty -> InferM (Validation (Set TCError) Ty)
+instantiate' :: Map TyVar Ty -> Ty -> InferM (Validation (Set TCMessage) Ty)
 instantiate' metaMap = go
   where
     go t@TCon {} = ok t
@@ -24,6 +25,6 @@ instantiate' metaMap = go
       pure $ TApp <$> t1' <*> t2'
     go (TVar v) = case Map.lookup v metaMap of
       Just metavar -> ok metavar
-      Nothing -> ko $ OutOfScopeTyVar v
+      Nothing -> ko $ TCMessage dummyPos (OutOfScopeTyVar v)
     go (Forall vars t) = ok $ Forall vars t
     go (Metavar v) = ok $ Metavar v
