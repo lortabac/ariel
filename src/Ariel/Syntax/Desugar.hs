@@ -39,9 +39,9 @@ desugarExpr ns (Prim p name args) = Core.Prim p name (map (desugarExpr ns) args)
 desugarExpr ns (IOPrim p name args) = Core.IOPrim p name (map (desugarExpr ns) args)
 desugarExpr _ (Case _ _) = error "Unimplemented"
 desugarExpr ns (If p c t f) = Core.If p (desugarExpr ns c) (desugarExpr ns t) (desugarExpr ns f)
-desugarExpr ns (NamedLam p name args e) = Core.Fix $ desugarExpr ns (Lam p (name : args) e)
+desugarExpr ns (NamedLam p name args e) = Core.Fix p $ desugarExpr ns (Lam p (name : args) e)
 desugarExpr ns (BindIO e1 e2) = Core.BindIO (desugarExpr ns e1) (desugarExpr ns e2)
-desugarExpr ns (Fix e) = Core.Fix (desugarExpr ns e)
+desugarExpr ns (Fix p e) = Core.Fix p (desugarExpr ns e)
 desugarExpr ns (Var p name) = resolveName p name ns
 desugarExpr ns (App p (e :| es)) = foldl' (Core.App p) (desugarExpr ns e) (desugarExpr ns <$> es)
 

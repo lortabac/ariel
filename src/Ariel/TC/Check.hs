@@ -78,4 +78,13 @@ infer (Prim p name args) = do
         pure inferedArgTy
       pure $ resTy <$ sequenceA inferedArgTys
     Nothing -> ko $ TCMessage p (InvalidPrim name)
+infer (Fix p expr) = do
+  exprT <- infer expr
+  eArr1 <- newMetavar
+  eArr2 <- newMetavar
+  arr <- newBoundMetavar (TArr eArr1 eArr2)
+  whenSuccess_ exprT $ \t -> do
+    addEqConstr p arr t
+    addEqConstr p eArr1 eArr2
+  pure $ eArr1 <$ exprT
 infer _ = error "Unsupported"

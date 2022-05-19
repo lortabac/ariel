@@ -44,7 +44,7 @@ data Expr
   | IOPrim Position Text [Expr]
   | Case Expr [CaseEquation]
   | If Position Expr Expr Expr
-  | Fix Expr
+  | Fix Position Expr
   | NamedLam Position Name [Name] Expr
   | BindIO Expr Expr
   | Var Position Name
@@ -61,11 +61,11 @@ instance SexpIso Expr where
               With (sexpIso >>>) $
                 With (\l -> position >>> swap >>> list (el (sym "lambda") >>> el sexpIso >>> el sexpIso) >>> l) $
                   With (\l -> position >>> swap >>> list (el (sym "let") >>> el (list (rest sexpIso)) >>> el sexpIso) >>> l) $
-                    With (\p -> position >>> swap >>> list (el (sym "prim") >>> el symbol >>> rest sexpIso) >>> p) $
+                    With (\p -> position >>> swap >>> list (el (hashed (sym "prim")) >>> el symbol >>> rest sexpIso) >>> p) $
                       With (\p -> position >>> swap >>> list (el (sym "io-prim") >>> el symbol >>> rest sexpIso) >>> p) $
                         With (list (el (sym "match") >>> el sexpIso >>> el (list (rest sexpIso))) >>>) $
                           With (\i -> position >>> swap >>> list (el (sym "if") >>> el sexpIso >>> el sexpIso >>> el sexpIso) >>> i) $
-                            With (list (el (sym "fix") >>> el sexpIso) >>>) $
+                            With (\f -> position >>> swap >>> list (el (sym "fix") >>> el sexpIso) >>> f) $
                               With (\n -> position >>> swap >>> list (el (sym "named-lambda") >>> el sexpIso >>> el sexpIso >>> el sexpIso) >>> n) $
                                 With (list (el (sym "bind-io") >>> el sexpIso >>> el sexpIso) >>>) $
                                   With (\v -> position >>> swap >>> sexpIso >>> v) $

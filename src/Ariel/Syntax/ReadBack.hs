@@ -78,7 +78,7 @@ readBackI (IPrim p) = readBackPrim p
 readBackI (IIOPrim p) = readBackIOPrim p
 readBackI (IIf c t f) = If dummyPos (readBackI c) (readBackI t) (readBackI f)
 readBackI (IBindIO e1 e2) = BindIO (readBackI e1) (readBackI e2)
-readBackI (IFix e) = Fix (readBackI e)
+readBackI (IFix e) = Fix dummyPos (readBackI e)
 
 readBackPrim :: Prim IExpr -> Expr
 readBackPrim (Eq e1 e2) = Prim dummyPos "=" [readBackI e1, readBackI e2]

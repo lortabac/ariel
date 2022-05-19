@@ -66,7 +66,7 @@ data Expr
   | App Position Expr Expr
   | If Position Expr Expr Expr
   | BindIO Expr Expr
-  | Fix Expr
+  | Fix Position Expr
   deriving (Eq, Show, Generic)
 
 instance NFData Expr
