@@ -40,10 +40,10 @@ ctxFreeVars = asks (concatMap getVars . localCtxElems . _localCtx)
 
 applyBindingsV :: Ty -> InferM (Validation (Set TCMessage) Ty)
 applyBindingsV t = do
-  maybeT <- applyBindings t
-  case maybeT of
-    Just t' -> ok t'
-    Nothing -> ko $ TCMessage dummyPos (CyclicType t)
+  eithT <- applyBindings t
+  case eithT of
+    Right t' -> ok t'
+    Left _ -> ko $ TCMessage dummyPos (CyclicType t)
 
 getFreeVars :: Ty -> InferM (Validation (Set TCMessage) [UVar])
 getFreeVars t = do

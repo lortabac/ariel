@@ -10,7 +10,6 @@ module Ariel.Core.Types where
 
 import Ariel.Common.Types
 import Ariel.Prelude
-import Control.DeepSeq
 import Control.Lens (Plated, children, transformM)
 import GHC.Generics
 import Language.Sexp.Located (Position, dummyPos)
@@ -66,10 +65,9 @@ data Expr
   | App Position Expr Expr
   | If Position Expr Expr Expr
   | BindIO Expr Expr
+  | Ann Position Expr Ty
   | Fix Position Expr
   deriving (Eq, Show, Generic)
-
-instance NFData Expr
 
 -- | Convenience constructor for vars
 var :: Name -> Expr

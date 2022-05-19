@@ -50,6 +50,7 @@ compile' ix defs (If _ e t f) = PIf (compile' ix defs e) (compile' ix defs t) (c
 compile' ix defs (Let p name body e) = compile' ix defs (App p (Lam p name e) body)
 compile' ix defs (BindIO e1 e2) = PBindIO (compile' ix defs e1) (compile' ix defs e2)
 compile' ix defs (Fix _ e) = PFix (compile' ix defs e)
+compile' ix defs (Ann _ e _) = compile' ix defs e
 compile' ix defs (Prim _ name es) = PPrim $ readPrimOrDie name (map (compile' ix defs) es)
 compile' ix defs (IOPrim _ name es) = PIOPrim $ readIOPrimOrDie name (map (compile' ix defs) es)
 

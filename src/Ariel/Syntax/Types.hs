@@ -47,6 +47,7 @@ data Expr
   | Fix Position Expr
   | NamedLam Position Name [Name] Expr
   | BindIO Expr Expr
+  | Ann Position Expr Ty
   | Var Position Name
   | App Position (NonEmpty Expr)
   deriving (Eq, Show, Generic)
@@ -68,10 +69,11 @@ instance SexpIso Expr where
                             With (\f -> position >>> swap >>> list (el (sym "fix") >>> el sexpIso) >>> f) $
                               With (\n -> position >>> swap >>> list (el (sym "named-lambda") >>> el sexpIso >>> el sexpIso >>> el sexpIso) >>> n) $
                                 With (list (el (sym "bind-io") >>> el sexpIso >>> el sexpIso) >>>) $
-                                  With (\v -> position >>> swap >>> sexpIso >>> v) $
-                                    With
-                                      (\app -> position >>> swap >>> sexpIso >>> app)
-                                      End
+                                  With (\a -> position >>> swap >>> list (el (sym "ann") >>> el sexpIso >>> el sexpIso) >>> a) $
+                                    With (\v -> position >>> swap >>> sexpIso >>> v) $
+                                      With
+                                        (\app -> position >>> swap >>> sexpIso >>> app)
+                                        End
 
 data LetDecl = LetDecl Name Expr
   deriving (Eq, Show, Generic)

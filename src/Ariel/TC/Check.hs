@@ -11,6 +11,7 @@ import Ariel.TC.Instantiate
 import Ariel.TC.Prim
 import Ariel.TC.Types
 import Control.Lens
+import Logic.Unify (UnificationResult(..), subsumes)
 import Validation
 
 typecheck :: Expr -> Either (Set TCMessage) Ty
@@ -87,4 +88,16 @@ infer (Fix p expr) = do
     addEqConstr p arr t
     addEqConstr p eArr1 eArr2
   pure $ eArr1 <$ exprT
+infer (Ann p expr ann) = do
+  exprTy <- infer expr
+  annTy <- instantiate ann
+  case successes [exprTy, annTy] of
+    [exprT, annT] -> do
+      subCheck <- subsumes exprT annT
+      case subCheck of
+        Unified -> ok annT
+        OccursFailure _ t -> ko $ TCMessage p (CyclicType t)
+        UnificationFailure t1 t2 -> ko $ TCMessage p (TypeMismatch t1 t2)
+        SubsumptionFailure t1 t2 -> ko $ TCMessage p (SubsumptionError t1 t2)
+    _ -> pure $ Failure (mconcat (failures [exprTy, annTy]))
 infer _ = error "Unsupported"

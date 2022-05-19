@@ -41,6 +41,7 @@ desugarExpr _ (Case _ _) = error "Unimplemented"
 desugarExpr ns (If p c t f) = Core.If p (desugarExpr ns c) (desugarExpr ns t) (desugarExpr ns f)
 desugarExpr ns (NamedLam p name args e) = Core.Fix p $ desugarExpr ns (Lam p (name : args) e)
 desugarExpr ns (BindIO e1 e2) = Core.BindIO (desugarExpr ns e1) (desugarExpr ns e2)
+desugarExpr ns (Ann p e t) = Core.Ann p (desugarExpr ns e) (desugarTy t)
 desugarExpr ns (Fix p e) = Core.Fix p (desugarExpr ns e)
 desugarExpr ns (Var p name) = resolveName p name ns
 desugarExpr ns (App p (e :| es)) = foldl' (Core.App p) (desugarExpr ns e) (desugarExpr ns <$> es)
