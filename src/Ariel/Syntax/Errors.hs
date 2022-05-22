@@ -51,6 +51,11 @@ showTCError (InvalidIOPrim t) =
   [trimming|
   Invalid io-prim '${t}' or invalid number of arguments
   |]
+showTCError (KindError t) =
+  let s = encodeTy t
+   in [trimming|
+  Kind error in '${s}'
+  |]
 
 encodeTy :: Ty -> Text
 encodeTy e = case encode (readBackTy e) of

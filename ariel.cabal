@@ -40,6 +40,8 @@ library
                      , Ariel.TC.Context
                      , Ariel.TC.Generalize
                      , Ariel.TC.Instantiate
+                     , Ariel.TC.IOPrim
+                     , Ariel.TC.Kind
                      , Ariel.TC.Prim
                      , Ariel.TC.Types
   other-modules:       Ariel.Prelude

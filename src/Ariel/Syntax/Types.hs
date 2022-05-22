@@ -46,7 +46,7 @@ data Expr
   | If Position Expr Expr Expr
   | Fix Position Expr
   | NamedLam Position Name [Name] Expr
-  | BindIO Expr Expr
+  | BindIO Position Expr Expr
   | Ann Position Expr Ty
   | Var Position Name
   | App Position (NonEmpty Expr)
@@ -63,12 +63,12 @@ instance SexpIso Expr where
                 With (\l -> position >>> swap >>> list (el (sym "lambda") >>> el sexpIso >>> el sexpIso) >>> l) $
                   With (\l -> position >>> swap >>> list (el (sym "let") >>> el (list (rest sexpIso)) >>> el sexpIso) >>> l) $
                     With (\p -> position >>> swap >>> list (el (hashed (sym "prim")) >>> el symbol >>> rest sexpIso) >>> p) $
-                      With (\p -> position >>> swap >>> list (el (sym "io-prim") >>> el symbol >>> rest sexpIso) >>> p) $
+                      With (\p -> position >>> swap >>> list (el (hashed (sym "io-prim")) >>> el symbol >>> rest sexpIso) >>> p) $
                         With (list (el (sym "match") >>> el sexpIso >>> el (list (rest sexpIso))) >>>) $
                           With (\i -> position >>> swap >>> list (el (sym "if") >>> el sexpIso >>> el sexpIso >>> el sexpIso) >>> i) $
                             With (\f -> position >>> swap >>> list (el (sym "fix") >>> el sexpIso) >>> f) $
                               With (\n -> position >>> swap >>> list (el (sym "named-lambda") >>> el sexpIso >>> el sexpIso >>> el sexpIso) >>> n) $
-                                With (list (el (sym "bind-io") >>> el sexpIso >>> el sexpIso) >>>) $
+                                With (\b -> position >>> swap >>> list (el (sym "bind-io") >>> el sexpIso >>> el sexpIso) >>> b) $
                                   With (\a -> position >>> swap >>> list (el (sym "ann") >>> el sexpIso >>> el sexpIso) >>> a) $
                                     With (\v -> position >>> swap >>> sexpIso >>> v) $
                                       With

@@ -48,6 +48,7 @@ data TCError
   | CyclicType Ty
   | InvalidPrim Text
   | InvalidIOPrim Text
+  | KindError Ty
   deriving (Eq, Show, Ord)
 
 ok :: Applicative m => a -> m (Validation e a)

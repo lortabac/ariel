@@ -27,7 +27,7 @@ readBackV (VBool i) = if isTrue# i then T else F
 readBackV (VClos env name e) = readBackEnv 1 env e $ Lam dummyPos [name] (readBackI e)
 readBackV (VDummyClos env name e) = readBackEnv 0 env e $ Lam dummyPos [name] (readBackI e)
 readBackV (VIOPrim p) = readBackVIOPrim p
-readBackV (VBindIO e1 e2) = BindIO (readBackV e1) (readBackV e2)
+readBackV (VBindIO e1 e2) = BindIO dummyPos (readBackV e1) (readBackV e2)
 
 readBackEnv :: Int -> Env Value -> IExpr -> Expr -> Expr
 readBackEnv i env e1 e2 = case restoreEnv i env e1 of
@@ -77,11 +77,11 @@ readBackI (IApp e1 e2) = App dummyPos [readBackI e1, readBackI e2]
 readBackI (IPrim p) = readBackPrim p
 readBackI (IIOPrim p) = readBackIOPrim p
 readBackI (IIf c t f) = If dummyPos (readBackI c) (readBackI t) (readBackI f)
-readBackI (IBindIO e1 e2) = BindIO (readBackI e1) (readBackI e2)
+readBackI (IBindIO e1 e2) = BindIO dummyPos (readBackI e1) (readBackI e2)
 readBackI (IFix e) = Fix dummyPos (readBackI e)
 
 readBackPrim :: Prim IExpr -> Expr
-readBackPrim (Eq e1 e2) = Prim dummyPos "=" [readBackI e1, readBackI e2]
+readBackPrim (Equal e1 e2) = Prim dummyPos "=" [readBackI e1, readBackI e2]
 readBackPrim (Plus e1 e2) = Prim dummyPos "+" [readBackI e1, readBackI e2]
 readBackPrim (Minus e1 e2) = Prim dummyPos "-" [readBackI e1, readBackI e2]
 readBackPrim (Lt e1 e2) = Prim dummyPos "<" [readBackI e1, readBackI e2]
@@ -101,4 +101,4 @@ readBackTy (Core.TCon name) = TSym name
 readBackTy (Core.TApp t1 t2) = TApp [readBackTy t1, readBackTy t2]
 readBackTy (Core.TVar v) = TSym (unTyVar v)
 readBackTy (Core.Forall vars t) = Forall vars (readBackTy t)
-readBackTy (Core.Metavar _) = error "Can't readBackTy"
+readBackTy (Core.Metavar t) = error ("Can't readBackTy: " ++ show t)

@@ -40,6 +40,9 @@ pattern TString = TCon "String"
 pattern TBool :: Ty
 pattern TBool = TCon "Bool"
 
+pattern TIO :: Ty -> Ty
+pattern TIO t = TApp (TCon "IO") t
+
 instance Plated Ty
 
 instance Unifiable Ty where
@@ -49,6 +52,11 @@ instance Unifiable Ty where
   transformTermM = transformM
 
   termChildren = children
+
+data Kind
+  = Star
+  | KArr Kind Kind
+  deriving (Eq, Show, Ord, Data)
 
 data Expr
   = Int Int
@@ -64,7 +72,7 @@ data Expr
   | Var Position Name
   | App Position Expr Expr
   | If Position Expr Expr Expr
-  | BindIO Expr Expr
+  | BindIO Position Expr Expr
   | Ann Position Expr Ty
   | Fix Position Expr
   deriving (Eq, Show, Generic)
