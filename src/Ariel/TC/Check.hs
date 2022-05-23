@@ -94,6 +94,16 @@ infer (IOPrim p name args) = do
         pure inferedArgTy
       pure $ resTy <$ sequenceA inferedArgTys
     Nothing -> ko $ TCMessage p (InvalidPrim name)
+infer (If p cond tru fls) = do
+  condTy <- infer cond
+  truTy <- infer tru
+  flsTy <- infer fls
+  case successes [condTy, truTy, flsTy] of
+    [condT, truT, flsT] -> do
+      addEqConstr p TBool condT
+      addEqConstr p truT flsT
+      ok truT
+    _ -> pure $ Failure (mconcat (failures [condTy, truTy, flsTy]))
 infer (Fix p expr) = do
   exprT <- infer expr
   eArr1 <- newMetavar
