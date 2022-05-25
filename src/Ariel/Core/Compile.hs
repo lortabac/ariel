@@ -25,7 +25,7 @@ compile ::
   (PExpr, Vector PExpr)
 compile defs expr = (rtExpr, rtGlobals)
   where
-    index = globalIndex (globals defs)
+    index = globalIndex (Map.toList $ _globals defs)
     rtExpr = compile' index defs expr
     rtGlobals = compileGlobals index defs
 
@@ -37,10 +37,10 @@ compile' ::
 compile' _ _ (Int (I# i)) = PConst (VInt i)
 compile' _ _ (String s) = PConst (VString s)
 compile' _ _ (Bool b) = PConst (VBool (boolToInt# b))
-compile' ix defs (Con qn tag) = compile' ix defs $ churchCon (sumTypes defs) qn tag
+compile' ix defs (Con qn tag) = compile' ix defs $ churchCon (_sumTypes defs) qn tag
 compile' ix defs (Case e es) = compile' ix defs $ churchCase e es
 compile' _ _ (Var _ name) = PVar name
-compile' index _ (Global qn) = PGlobal (index ! qn)
+compile' index _ (Global _ qn) = PGlobal (index ! qn)
 compile' ix defs (Lam _ name e) =
   if isWildcard name
     then PWildAbs name (compile' ix defs e)
@@ -55,7 +55,7 @@ compile' ix defs (Prim _ name es) = PPrim $ readPrimOrDie name (map (compile' ix
 compile' ix defs (IOPrim _ name es) = PIOPrim $ readIOPrimOrDie name (map (compile' ix defs) es)
 
 compileGlobals :: Map QName Int -> Defs -> Vector PExpr
-compileGlobals index defs = fmap (compile' index defs) $ V.fromList $ map snd (globals defs)
+compileGlobals index defs = fmap (compile' index defs) $ V.fromList $ map snd (Map.toList $ _globals defs)
 
 globalIndex :: [(QName, Expr)] -> Map QName Int
 globalIndex = Map.fromList . flip zip [0 ..] . map fst

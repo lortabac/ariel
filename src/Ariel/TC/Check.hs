@@ -4,6 +4,7 @@ module Ariel.TC.Check where
 
 import Ariel.Common.IOPrim
 import Ariel.Common.Prim
+import Ariel.Common.Types
 import Ariel.Core.Types
 import Ariel.Prelude
 import Ariel.TC.Context
@@ -18,8 +19,11 @@ import Logic.Unify (UnificationResult(..), subsumes)
 import Validation
 
 typecheck :: Expr -> Either (Set TCMessage) Ty
-typecheck e = fst $
-  runInferM $ do
+typecheck = typecheckWithGlobalCtx emptyGlobalCtx
+
+typecheckWithGlobalCtx :: GlobalCtx Ty -> Expr -> Either (Set TCMessage) Ty
+typecheckWithGlobalCtx gCtx e = fst $
+  runInferMWithGlobalCtx gCtx $ do
     vT <- infer e
     vRes <- applyConstraints
     case (vT, vRes) of
@@ -39,11 +43,11 @@ infer (Var p name) = do
   case maybeT of
     Just t -> instantiate t
     Nothing -> ko $ TCMessage p (OutOfScopeVar name)
-infer (Global name) = do
-  maybeT <- asks (\ctx -> lookupGlobalCtx name (ctx ^. globalCtx))
+infer (Global p qname@(QName _ name)) = do
+  maybeT <- asks (\ctx -> lookupGlobalCtx qname (ctx ^. globalCtx))
   case maybeT of
     Just t -> instantiate t
-    Nothing -> error ("Not in scope: " ++ show name)
+    Nothing -> ko $ TCMessage p (OutOfScopeVar name)
 infer (Lam _ name e) = do
   varTy <- newMetavar
   bodyTy <- local (over localCtx (extendLocalCtx name varTy)) $ infer e

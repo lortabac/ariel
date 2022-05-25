@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -10,14 +11,13 @@ module Ariel.Core.Types where
 
 import Ariel.Common.Types
 import Ariel.Prelude
-import Control.Lens (Plated, children, transformM)
+import Control.Lens (Plated, children, transformM, makeLenses)
 import GHC.Generics
 import Language.Sexp.Located (Position, dummyPos)
 import Logic.Unify
 
 data Decl
-  = Decl Text Expr
-  | TypeDecl Text (Map Tag [Ty])
+  = Decl Position QName Expr
   deriving (Eq, Show, Generic)
 
 data Ty
@@ -63,7 +63,7 @@ data Expr
   | String Text
   | Bool Bool
   | Con QName Tag
-  | Global QName
+  | Global Position QName
   | Lam Position Name Expr
   | Let Position Name Expr Expr
   | Prim Position Text [Expr]
@@ -94,8 +94,8 @@ infixr 1 ==>
 infixl 9 @@
 
 data Defs = Defs
-  { globals :: [(QName, Expr)],
-    sumTypes :: Map QName (Map Tag [Ty])
+  { _globals :: Map QName Expr,
+    _sumTypes :: Map QName (Map Tag [Ty])
   }
   deriving (Eq, Show)
 
@@ -104,3 +104,5 @@ instance Semigroup Defs where
 
 instance Monoid Defs where
   mempty = Defs mempty mempty
+
+makeLenses ''Defs

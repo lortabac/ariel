@@ -14,6 +14,7 @@ import Validation
 
 generalize :: Ty -> InferM (Validation (Set TCMessage) Ty)
 generalize t = do
+  _ <- applyConstraints
   tFreeVars <- fmap nub <$> getFreeVars t
   gFreeVars <- fmap nub ctxFreeVars
   let intVars = fmap (\\ gFreeVars) tFreeVars
@@ -22,9 +23,8 @@ generalize t = do
     Success metavars -> do
       let tyVarMap = zip metavars tyVarSupply
           t' = foldl (\acc (v, tv) -> subst v tv acc) t tyVarMap
-      t'' <- applyBindingsV t'
       let tyVars = nub $ map snd tyVarMap
-      pure $ Forall tyVars <$> t''
+      ok $ Forall tyVars t'
     Failure e -> pure $ Failure e
 
 subst :: UVar -> TyVar -> Ty -> Ty
@@ -46,9 +46,16 @@ applyBindingsV t = do
     Left _ -> ko $ TCMessage dummyPos (CyclicType t)
 
 getFreeVars :: Ty -> InferM (Validation (Set TCMessage) [UVar])
-getFreeVars t = do
+getFreeVars ty = do
   res <- applyConstraints
-  validation (pure . Failure) (const . ok $ getVars t) res
+  case res of
+    Success _ -> do
+      ty' <- applyBindingsV ty
+      case ty' of
+        Success t ->
+          validation (pure . Failure) (const . ok $ getVars t) res
+        Failure err -> pure $ Failure err
+    Failure err -> pure $ Failure err
 
 applyConstraints :: InferM (Validation (Set TCMessage) ())
 applyConstraints = do

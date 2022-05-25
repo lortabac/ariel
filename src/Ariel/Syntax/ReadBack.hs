@@ -9,16 +9,18 @@ import Ariel.Common.IOPrim
 import Ariel.Common.Prim
 import Ariel.Common.Types
 import qualified Ariel.Core.Types as Core
+import Ariel.Prelude
 import Ariel.Runtime.Env
 import Ariel.Runtime.Types
 import Ariel.Syntax.Types
 import Control.Applicative ((<|>))
 import Data.Bifunctor
-import Data.Foldable (asum, toList)
+import Data.Foldable (asum)
 import Data.Maybe (mapMaybe)
 import GHC.Exts (isTrue#)
 import GHC.Types (Int (..))
 import Language.Sexp.Located (dummyPos)
+import Logic.Unify (UVar(..))
 
 readBackV :: Value -> Expr
 readBackV (VInt i) = Int (I# i)
@@ -101,4 +103,4 @@ readBackTy (Core.TCon name) = TSym name
 readBackTy (Core.TApp t1 t2) = TApp [readBackTy t1, readBackTy t2]
 readBackTy (Core.TVar v) = TSym (unTyVar v)
 readBackTy (Core.Forall vars t) = Forall vars (readBackTy t)
-readBackTy (Core.Metavar t) = error ("Can't readBackTy: " ++ show t)
+readBackTy (Core.Metavar (UVar i)) = TSym $ Name ("_" <> tshow i)

@@ -6,7 +6,6 @@ module Ariel.Syntax.Types where
 
 import Ariel.Common.Types
 import Data.List.NonEmpty (NonEmpty)
-import Data.Map.Strict (Map)
 import Data.Text (Text)
 import GHC.Generics
 import Language.SexpGrammar
@@ -18,6 +17,15 @@ newtype ImportDecl = ImportDecl Name
 instance SexpIso ImportDecl where
   sexpIso = with $
     \iDecl -> list (el (sym "import") >>> el sexpIso) >>> iDecl
+
+data DeclOrExpr = DOEDecl Decl | DOEExpr Expr
+  deriving (Eq, Show, Generic)
+
+instance SexpIso DeclOrExpr where
+  sexpIso = match $
+    With (sexpIso >>>) $
+      With (sexpIso >>>)
+        End
 
 data Decl
   = Decl Position Name Expr
@@ -102,21 +110,6 @@ data CaseEquation = CaseEquation Pat Expr
 instance SexpIso CaseEquation where
   sexpIso = with $
     \eq -> bracketList (el sexpIso >>> el sexpIso) >>> eq
-
-data Defs = Defs
-  { terms :: Map Name [QName],
-    types :: Map Name [(QName, TyDef)]
-  }
-  deriving (Eq, Show, Generic)
-
-instance Semigroup Defs where
-  Defs tms1 tys1 <> Defs tsm2 tys2 = Defs (tms1 <> tsm2) (tys1 <> tys2)
-
-instance Monoid Defs where
-  mempty = Defs mempty mempty
-
-data TyDef = Sum | Record
-  deriving (Eq, Show, Generic)
 
 data Ty
   = Forall [TyVar] Ty

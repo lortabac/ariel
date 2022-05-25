@@ -1,7 +1,6 @@
 module Main where
 
-import qualified Data.ByteString.Lazy.Char8 as LBS
-import Examples
+import REPL
 
 main :: IO ()
-main = LBS.putStrLn =<< exampleSumr
+main = repl

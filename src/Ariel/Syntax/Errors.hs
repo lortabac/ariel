@@ -8,9 +8,14 @@ import Ariel.Core.Types
 import Ariel.Prelude
 import Ariel.Syntax.ReadBack
 import Ariel.TC.Types
+import qualified Data.Text as T
 import Language.Sexp.Located (Position (..))
 import Language.SexpGrammar (encode)
 import NeatInterpolation
+
+showTCMessageWithPos :: TCMessage -> Text
+showTCMessageWithPos msg = case showTCMessage msg of
+  (pos, txt) -> T.unlines [tshow pos, txt]
 
 showTCMessage :: TCMessage -> (Position, Text)
 showTCMessage (TCMessage p err) = (p, showTCError err)

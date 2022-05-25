@@ -16,12 +16,13 @@ import qualified Data.Set as Set
 import Data.Text (Text)
 import Language.SexpGrammar (Position)
 
-desugarDefs :: Defs -> Core.Defs
-desugarDefs _ = mempty
-
-desugarDecl :: Map Text (Set Name) -> Decl -> Core.Decl
-desugarDecl ns (Decl _ (Name name) e) = Core.Decl name (desugarExpr ns e)
-desugarDecl ns (DeclLam p (Name name :| args) e) = Core.Decl name (desugarExpr ns (Lam p args e))
+desugarDecl :: Text -> Map Text (Set Name) -> Decl -> Core.Decl
+desugarDecl declNS ns (Decl p name e) =
+  let qn = QName declNS name
+   in Core.Decl p qn (desugarExpr ns e)
+desugarDecl declNS ns (DeclLam p (name :| args) e) =
+  let qn = QName declNS name
+   in Core.Decl p qn (desugarExpr ns (Lam p args e))
 
 desugarExpr :: Map Text (Set Name) -> Expr -> Core.Expr
 desugarExpr _ (Int i) = Core.Int i
@@ -61,7 +62,7 @@ desugarTy' vars (TArr ts) = desugarTy' vars $ TApp $ TSym "->" :| ts
 resolveName :: Position -> Name -> Map Text (Set Name) -> Core.Expr
 resolveName p name ns = case matches of
   [] -> Core.Var p name
-  [moduleName] -> Core.Global (QName moduleName name)
+  [moduleName] -> Core.Global p (QName moduleName name)
   _ -> error ("Ambiguous name: " ++ show name)
   where
     matches = mapMaybe findModuleName (Map.toList ns)

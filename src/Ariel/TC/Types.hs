@@ -10,6 +10,7 @@ import Ariel.Core.Types
 import Ariel.Prelude
 import Ariel.TC.Constraints
 import Ariel.TC.Context
+import Control.Lens
 import qualified Data.Set as Set
 import Language.SexpGrammar (Position)
 import Logic.Unify
@@ -32,7 +33,13 @@ instance MonadUnify Ty InferM where
   applyBindings = InferM . applyBindings
 
 runInferM :: InferM a -> (a, TyConstrs)
-runInferM (InferM m) = runState (runReaderT (evalUnifyT m) emptyCtx) mempty
+runInferM = runInferMWithCtx emptyCtx
+
+runInferMWithCtx :: TyCtx -> InferM a -> (a, TyConstrs)
+runInferMWithCtx ctx (InferM m) = runState (runReaderT (evalUnifyT m) ctx) mempty
+
+runInferMWithGlobalCtx :: GlobalCtx Ty -> InferM a -> (a, TyConstrs)
+runInferMWithGlobalCtx tys = runInferMWithCtx (emptyCtx & globalCtx .~ tys)
 
 data TCMessage = TCMessage
   { position :: Position,
