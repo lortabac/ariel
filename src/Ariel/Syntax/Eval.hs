@@ -23,21 +23,27 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import Language.SexpGrammar (SexpIso, decode, encodePretty)
 
+data TCCtx = TCCtx
+  { names   :: Map Text (Set Name)
+  , globals :: Map QName Core.Expr
+  , tyCtx   :: GlobalCtx Core.Ty
+  } deriving (Eq, Show)
+
 data Outcome
   = ExprOutcome ByteString
   | DeclOutcome QName Core.Ty Core.Defs
   deriving (Eq, Show)
 
-runArielStr :: Map Text (Set Name) -> Core.Defs -> ByteString -> IO (Either [Text] Outcome)
-runArielStr ns defs exprOrDecl = case decode exprOrDecl of
+runArielStr :: TCCtx -> ByteString -> IO (Either [Text] Outcome)
+runArielStr ctx exprOrDecl = case decode exprOrDecl of
   Right (DOEExpr parsedExpr) -> do
-    res <- runAriel ns defs parsedExpr
+    res <- runAriel ctx parsedExpr
     case res of
       Right e -> pure $ Right $ ExprOutcome (encodeOrDie e)
       Left errs -> pure $ Left $ map showTCMessageWithPos (toList errs)
-  Right (DOEDecl decl) -> case desugarDecl "user" ns decl of
+  Right (DOEDecl decl) -> case desugarDecl "user" (names ctx) decl of
     cDecl@(Core.Decl _ qname cExpr) -> do
-      case typecheckCore defs cExpr of
+      case typecheckCore ctx cExpr of
         Right ty ->
           let newDefs = defsInsertDecl cDecl defs
            in pure $ Right $ DeclOutcome qname ty newDefs
@@ -86,10 +92,10 @@ typecheckArielStr ns defs expr = tc
 typecheckAriel :: Map Text (Set Name) -> Core.Defs -> Expr -> Either (Set TCMessage) Ty
 typecheckAriel ns defs expr = sweetenTy . readBackTy <$> typecheckCore defs (desugarExpr ns expr)
 
-typecheckCore :: Core.Defs -> Core.Expr -> Either (Set TCMessage) Core.Ty
-typecheckCore defs = typecheckWithGlobalCtx gCtx
+typecheckCore :: TCCtx -> Core.Expr -> Either (Set TCMessage) Core.Ty
+typecheckCore ctx = typecheckWithGlobalCtx gCtx
   where
-    gCtx = buildGlobalCtx (Core._globals defs)
+    gCtx = buildGlobalCtx (globals ctx)
 
 buildGlobalCtx :: Map QName Core.Expr -> GlobalCtx Core.Ty
 buildGlobalCtx gs = foldr (\(qname, e) acc -> addToGCtx qname e acc) emptyGlobalCtx globalDefs
@@ -97,7 +103,7 @@ buildGlobalCtx gs = foldr (\(qname, e) acc -> addToGCtx qname e acc) emptyGlobal
     globalDefs = Map.toList gs
     addToGCtx qname e acc = case typecheckWithGlobalCtx acc e of
       Right ty -> extendGlobalCtx qname ty acc
-      Left _ -> error "Type error"
+      Left e -> error ("Type error: " ++ show e)
 
 defsInsertDecl :: Core.Decl -> Core.Defs -> Core.Defs
 defsInsertDecl (Core.Decl _ qname expr) =

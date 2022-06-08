@@ -29,8 +29,8 @@ repl = do
           }
   runInputT settings (loop mempty mempty)
   where
-    loop :: Map Text (Set Name) -> Core.Defs -> InputT IO ()
-    loop ns defs = do
+    loop :: TCCtx -> InputT IO ()
+    loop ctx = do
       mInput <- getInputLine "> "
       case mInput of
         Nothing -> pure ()
@@ -50,7 +50,7 @@ repl = do
               case res of
                 Right (ExprOutcome r) -> liftIO (LBS.putStrLn r) >> loop ns defs
                 Right (DeclOutcome (QName _ name) _ newDefs) ->
-                  let newNS = Map.insert "user" [name] ns
+                  let newNS = Map.insertWith (<>) "user" [name] ns
                    in loop newNS newDefs
                 Left errs -> do
                   traverse_ (liftIO . TIO.putStrLn) errs
