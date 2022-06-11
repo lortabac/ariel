@@ -24,14 +24,22 @@ import qualified Data.Text as T
 import Language.SexpGrammar (SexpIso, decode, encodePretty)
 
 data TCCtx = TCCtx
-  { names   :: Map Text (Set Name)
-  , globals :: Map QName Core.Expr
-  , tyCtx   :: GlobalCtx Core.Ty
+  { names    :: Map Text (Set Name)
+  , globals  :: Map QName Core.Expr
+  , tyCtx    :: GlobalCtx Core.Ty
+  , sumTypes :: Map QName (Map Tag [Core.Ty])
   } deriving (Eq, Show)
+
+emptyTCCtx :: TCCtx
+emptyTCCtx = TCCtx mempty mempty emptyGlobalCtx mempty
+
+tcCtxToCoreDefs :: TCCtx -> Core.Defs
+tcCtxToCoreDefs ctx = Core.Defs (globals ctx) (sumTypes ctx)
+
 
 data Outcome
   = ExprOutcome ByteString
-  | DeclOutcome QName Core.Ty Core.Defs
+  | DeclOutcome QName Core.Ty Core.Expr
   deriving (Eq, Show)
 
 runArielStr :: TCCtx -> ByteString -> IO (Either [Text] Outcome)
@@ -42,24 +50,22 @@ runArielStr ctx exprOrDecl = case decode exprOrDecl of
       Right e -> pure $ Right $ ExprOutcome (encodeOrDie e)
       Left errs -> pure $ Left $ map showTCMessageWithPos (toList errs)
   Right (DOEDecl decl) -> case desugarDecl "user" (names ctx) decl of
-    cDecl@(Core.Decl _ qname cExpr) -> do
+    Core.Decl _ qname cExpr -> do
       case typecheckCore ctx cExpr of
-        Right ty ->
-          let newDefs = defsInsertDecl cDecl defs
-           in pure $ Right $ DeclOutcome qname ty newDefs
+        Right ty -> pure $ Right $ DeclOutcome qname ty cExpr
         Left errs -> pure $ Left $ map showTCMessageWithPos (toList errs)
   Left parsingErr -> pure $ Left ["Parsing error: " <> T.pack parsingErr]
 
-runAriel :: Map Text (Set Name) -> Core.Defs -> Expr -> IO (Either (Set TCMessage) Expr)
-runAriel ns defs expr = case typecheckCore defs cExpr of
+runAriel :: TCCtx -> Expr -> IO (Either (Set TCMessage) Expr)
+runAriel ctx expr = case typecheckCore ctx cExpr of
   Right _ ->
-    let (pExpr, pGlobals) = compile defs cExpr
+    let (pExpr, pGlobals) = compile (tcCtxToCoreDefs ctx) cExpr
         iGlobals = fmap removeNames pGlobals
         iExpr = removeNames pExpr
      in Right . sweetenExpr . readBackV <$> run iGlobals mempty iExpr
   Left err -> pure $ Left err
   where
-    cExpr = desugarExpr ns expr
+    cExpr = desugarExpr (names ctx) expr
 
 evalArielStr :: Map Text (Set Name) -> Core.Defs -> ByteString -> ByteString
 evalArielStr ns defs expr = encodeOrDie $ evalAriel ns defs (decodeOrDie expr)
@@ -81,29 +87,29 @@ evalAriel ns defs expr = sweetenExpr . readBackV $ eval iGlobals mempty iExpr
     iGlobals = fmap removeNames pGlobals
     iExpr = removeNames pExpr
 
-typecheckArielStr :: Map Text (Set Name) -> Core.Defs -> ByteString -> Either [Text] ByteString
-typecheckArielStr ns defs expr = tc
+typecheckArielStr :: TCCtx -> ByteString -> Either [Text] ByteString
+typecheckArielStr ctx expr = tc
   where
     tc = do
       ast <- first (pure . T.pack) $ decode expr
-      ty <- first (map showTCMessageWithPos . toList) $ typecheckAriel ns defs ast
+      ty <- first (map showTCMessageWithPos . toList) $ typecheckAriel ctx ast
       pure $ encodeOrDie ty
 
-typecheckAriel :: Map Text (Set Name) -> Core.Defs -> Expr -> Either (Set TCMessage) Ty
-typecheckAriel ns defs expr = sweetenTy . readBackTy <$> typecheckCore defs (desugarExpr ns expr)
+typecheckAriel :: TCCtx -> Expr -> Either (Set TCMessage) Ty
+typecheckAriel ctx expr = sweetenTy . readBackTy <$> typecheckCore ctx (desugarExpr (names ctx) expr)
 
 typecheckCore :: TCCtx -> Core.Expr -> Either (Set TCMessage) Core.Ty
 typecheckCore ctx = typecheckWithGlobalCtx gCtx
   where
-    gCtx = buildGlobalCtx (globals ctx)
+    gCtx = buildGlobalCtx ctx
 
-buildGlobalCtx :: Map QName Core.Expr -> GlobalCtx Core.Ty
-buildGlobalCtx gs = foldr (\(qname, e) acc -> addToGCtx qname e acc) emptyGlobalCtx globalDefs
+buildGlobalCtx :: TCCtx -> GlobalCtx Core.Ty
+buildGlobalCtx ctx = foldr (\(qname, e) acc -> addToGCtx qname e acc) (tyCtx ctx) globalDefs
   where
-    globalDefs = Map.toList gs
+    globalDefs = Map.toList $ globals ctx
     addToGCtx qname e acc = case typecheckWithGlobalCtx acc e of
       Right ty -> extendGlobalCtx qname ty acc
-      Left e -> error ("Type error: " ++ show e)
+      Left err -> error ("Type error: " ++ show err)
 
 defsInsertDecl :: Core.Decl -> Core.Defs -> Core.Defs
 defsInsertDecl (Core.Decl _ qname expr) =

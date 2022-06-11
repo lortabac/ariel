@@ -5,9 +5,9 @@
 module REPL where
 
 import Ariel.Common.Types
-import qualified Ariel.Core.Types as Core
 import Ariel.Prelude
 import Ariel.Syntax.Eval
+import Ariel.TC.Context
 import Control.Monad.Catch
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.Map as Map
@@ -27,34 +27,41 @@ repl = do
           { historyFile = Just historyPath,
             autoAddHistory = True
           }
-  runInputT settings (loop mempty mempty)
+  runInputT settings (loop emptyTCCtx)
   where
     loop :: TCCtx -> InputT IO ()
     loop ctx = do
       mInput <- getInputLine "> "
       case mInput of
         Nothing -> pure ()
-        Just "" -> loop ns defs
+        Just "" -> loop ctx
         Just ":quit" -> pure ()
         Just ":q" -> pure ()
         Just ":exit" -> pure ()
         Just (':' : cmd) -> case break (== ' ') cmd of
-          ("t", expr) -> case typecheckArielStr ns defs (LBS.pack expr) of
-                Right ty -> liftIO (LBS.putStrLn ty) >> loop ns defs
+          ("t", expr) -> case typecheckArielStr ctx (LBS.pack expr) of
+                Right ty -> liftIO (LBS.putStrLn ty) >> loop ctx
                 Left errs -> do
                   traverse_ (liftIO . TIO.putStrLn) errs
-                  loop ns defs
-          _ -> liftIO (putStrLn "Invalid command") >> loop ns defs
+                  loop ctx
+          _ -> liftIO (putStrLn "Invalid command") >> loop ctx
         Just expr -> do
-              res <- liftIO $ runArielStr ns defs (LBS.pack expr)
+              res <- liftIO $ runArielStr ctx (LBS.pack expr)
               case res of
-                Right (ExprOutcome r) -> liftIO (LBS.putStrLn r) >> loop ns defs
-                Right (DeclOutcome (QName _ name) _ newDefs) ->
-                  let newNS = Map.insertWith (<>) "user" [name] ns
-                   in loop newNS newDefs
+                Right (ExprOutcome r) -> liftIO (LBS.putStrLn r) >> loop ctx
+                Right (DeclOutcome qname@(QName _ name) ty e) ->
+                  let newNS = Map.insertWith (<>) "user" [name] (names ctx)
+                      newDefs = Map.insert qname e (globals ctx)
+                      newTyCtx = extendGlobalCtx qname ty (tyCtx ctx)
+                      newCtx = ctx
+                        { names = newNS
+                        , tyCtx = newTyCtx
+                        , globals = newDefs
+                        }
+                   in loop newCtx
                 Left errs -> do
                   traverse_ (liftIO . TIO.putStrLn) errs
-                  loop ns defs
+                  loop ctx
 
 getHistoryFilePath :: IO FilePath
 getHistoryFilePath = do
